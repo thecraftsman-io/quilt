@@ -120,17 +120,19 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   };
   return (
     <AuthLayout>
-      <View className="w-full max-w-full gap-8">
-        <View className="gap-3">
+      <View className="w-full max-w-full gap-4 sm:gap-6">
+        <View className="gap-1 sm:gap-2">
           <Text
             variant="display"
-            className="text-[36px] leading-[44px] tracking-[-1.3px]"
+            className="text-[26px] leading-[32px] sm:text-[34px] sm:leading-[42px] tracking-[-1px]"
           >
             {content.title}
           </Text>
-          <Text tone="textMuted">{content.subtitle}</Text>
+          <Text tone="textMuted" className="text-sm sm:text-base">
+            {content.subtitle}
+          </Text>
         </View>
-        <View className="w-full max-w-full gap-5">
+        <View className="w-full max-w-full gap-3 sm:gap-4">
           {isSignUp && (
             <TextField
               ref={nameRef}
@@ -167,38 +169,34 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             submitBehavior="submit"
             onSubmitEditing={() => passwordRef.current?.focus()}
           />
-          <View className="gap-2">
-            <PasswordField
-              ref={passwordRef}
-              editable={!pending}
-              label="Password"
-              placeholder={
-                isSignUp ? 'Create a password' : 'Enter your password'
-              }
-              value={values.password}
-              onChangeText={(value) => change('password', value)}
-              onBlur={() => blur('password')}
-              error={errors.password}
-              hint={
-                isSignUp
-                  ? '10+ characters with uppercase, lowercase, number & symbol.'
-                  : undefined
-              }
-              autoComplete={isSignUp ? 'new-password' : 'current-password'}
-              textContentType={isSignUp ? 'newPassword' : 'password'}
-              returnKeyType="go"
-              onSubmitEditing={() => {
-                void submit();
-              }}
-            />
-          </View>
+          <PasswordField
+            ref={passwordRef}
+            editable={!pending}
+            label="Password"
+            placeholder={isSignUp ? 'Create a password' : 'Enter your password'}
+            value={values.password}
+            onChangeText={(value) => change('password', value)}
+            onBlur={() => blur('password')}
+            error={errors.password}
+            hint={
+              isSignUp
+                ? 'Min 10 characters with upper, lower, number & symbol.'
+                : undefined
+            }
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            textContentType={isSignUp ? 'newPassword' : 'password'}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              void submit();
+            }}
+          />
           {submissionError && (
             <View
               role="alert"
               aria-live="assertive"
-              className="rounded-md bg-surfaceMuted p-4"
+              className="rounded-md bg-surfaceMuted p-3"
             >
-              <Text variant="label" tone="danger">
+              <Text variant="label" tone="danger" className="text-sm">
                 {submissionError}
               </Text>
             </View>
@@ -212,22 +210,17 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             className="w-full"
           />
         </View>
-        <View className="border-t border-border pt-6 items-center gap-2">
+        <View className="border-t border-border pt-4 items-center">
           <View className="flex-row flex-wrap items-center justify-center gap-1">
             <Text variant="label" tone="textMuted">
               {isSignUp ? 'Already have an account?' : 'New to Quilt?'}
             </Text>
             <Link href={isSignUp ? '/sign-in' : '/sign-up'} asChild>
-              <Text variant="label" className="py-3 px-1 text-primary">
+              <Text variant="label" className="py-2 px-1 text-primary">
                 {isSignUp ? 'Sign in' : 'Create an account'} →
               </Text>
             </Link>
           </View>
-          <Link href="/" asChild>
-            <Text variant="caption" tone="textMuted" className="py-3">
-              ← About Quilt
-            </Text>
-          </Link>
         </View>
       </View>
     </AuthLayout>

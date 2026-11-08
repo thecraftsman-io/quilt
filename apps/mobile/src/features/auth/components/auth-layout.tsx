@@ -22,8 +22,8 @@ function TogetherIllustration() {
 
 export function AuthLayout({ children }: PropsWithChildren) {
   return (
-    <EntryLayout>
-      <View className="flex-1 w-full max-w-[1200px] self-center pb-12 gap-16 flex-col px-6 pt-8 lg:flex-row lg:px-10 lg:pt-6">
+    <EntryLayout showBackButton>
+      <View className="flex-1 w-full max-w-[1200px] self-center pb-4 pt-1 gap-8 flex-col px-6 lg:flex-row lg:px-10 lg:pt-6 lg:pb-12 lg:gap-16">
         <View className="flex-1 w-full justify-center items-center py-0 lg:py-10">
           <View className="w-full max-w-[400px]">{children}</View>
         </View>

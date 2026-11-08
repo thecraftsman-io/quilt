@@ -17,8 +17,9 @@ export function getActionProps({
   'aria-pressed': pressed,
   'aria-current': current,
   'aria-selected': selected,
+  href: _href,
   ...props
-}: ActionProps): ActionProps {
+}: ActionProps & { href?: string }): ActionProps {
   return {
     ...props,
     // Native HTML controls default to content-box. A full-width action must
