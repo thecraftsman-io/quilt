@@ -32,6 +32,7 @@
   },
   "prettier": "@quilt/prettier-config",
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@quilt/domain": "workspace:*"
   }
 }

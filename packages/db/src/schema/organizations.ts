@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
 export const organization = pgTable('organization', {
@@ -12,19 +12,28 @@ export const organization = pgTable('organization', {
   metadata: text('metadata'),
 });
 
-export const member = pgTable('member', {
-  id: text('id').primaryKey(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organization.id, { onDelete: 'cascade' }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  role: text('role').notNull().default('member'),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const member = pgTable(
+  'member',
+  {
+    id: text('id').primaryKey(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('editor'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('member_workspace_user_unique').on(
+      table.organizationId,
+      table.userId,
+    ),
+  ],
+);
 
 export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),

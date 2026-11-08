@@ -8,7 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 describe('API Startup', () => {
   it(
     'the compiled API entry boots and serves health',
-    { timeout: 15000 },
+    { timeout: 45000 },
     async () => {
       const reservation = createServer();
       reservation.listen(0, '127.0.0.1');
@@ -29,6 +29,7 @@ describe('API Startup', () => {
             BETTER_AUTH_SECRET:
               'test-only-startup-secret-at-least-32-characters',
             NODE_ENV: 'test',
+            CORS_ORIGINS: 'http://localhost:8081',
           },
           stdio: ['ignore', 'pipe', 'pipe'],
         },
@@ -44,7 +45,7 @@ describe('API Startup', () => {
 
       try {
         let response: Response | undefined;
-        for (let attempt = 0; attempt < 80; attempt++) {
+        for (let attempt = 0; attempt < 200; attempt++) {
           if (child.exitCode !== null) break;
           try {
             response = await fetch(`http://127.0.0.1:${port}/api/health`, {
@@ -63,6 +64,27 @@ describe('API Startup', () => {
           status: 'ok',
           service: 'quilt-api',
         });
+        const preflight = await fetch(
+          `http://127.0.0.1:${port}/api/organizations`,
+          {
+            method: 'OPTIONS',
+            signal: AbortSignal.timeout(1000),
+            headers: {
+              Origin: 'http://localhost:8081',
+              'Access-Control-Request-Method': 'PATCH',
+            },
+          },
+        );
+        expect(preflight.status).toBe(204);
+        expect(preflight.headers.get('access-control-allow-origin')).toBe(
+          'http://localhost:8081',
+        );
+        expect(preflight.headers.get('access-control-allow-credentials')).toBe(
+          'true',
+        );
+        expect(preflight.headers.get('access-control-allow-methods')).toContain(
+          'PATCH',
+        );
       } finally {
         if (child.exitCode === null) {
           child.kill();

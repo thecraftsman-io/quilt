@@ -4,6 +4,7 @@
     "workspace",
     "code-quality",
     "domain-package",
+    "finance-api",
     "design-system",
     "app-navigation",
     "authentication-ui",

@@ -104,8 +104,9 @@ policy explicitly converts them.
 **Accounts.** Each account has one currency and a signed opening balance anchored
 to a calendar date. Cash, bank, and credit-card are provisional initial kinds.
 A liability can have a negative opening balance and a credit balance can be
-positive. No current-balance calculator exists yet. Define opening-balance
-cutoffs and backdated activity before exposing balance calculations.
+positive. The balance calculator treats the opening balance as an end-of-day
+checkpoint and includes subsequent booked activity. The finance API locks the
+checkpoint and currency once an account has transaction history.
 
 **Transactions.** Expenses, income, and refunds carry positive magnitudes; their
 kind defines their meaning. Allocations are positive, use the transaction
@@ -185,9 +186,11 @@ spending helper are implemented here. They do not validate every structural
 field or graph of records. Bills, contributions, imports and extraction need
 aggregate validators/state transitions once their policies are agreed.
 
-The Drizzle `workspaces` table is unchanged. This work creates no SQL migration
-or financial endpoint. Domain records are not Drizzle rows or request DTOs;
-dedicated adapters and database constraints must map them.
+The standalone Drizzle `workspaces` table is unchanged. The first
+[finance API slice](/docs/development/finance-api) uses existing household
+organization IDs as workspace boundaries and adds migrations for aggregate
+records, audit history, operation results, and unique membership. Dedicated
+contracts and adapters map domain records to persistence and HTTP payloads.
 
 ## Scenarios for the next slice
 

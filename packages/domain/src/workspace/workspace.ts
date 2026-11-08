@@ -28,7 +28,7 @@ export interface Membership extends WorkspaceRecord<'membership'> {
 export type WorkspacePermission = 'read' | 'edit-finances' | 'manage-members';
 /** Pure policy only: the server must load current membership on every request. */
 export function hasWorkspacePermission(
-  membership: Membership,
+  membership: Pick<Membership, 'role' | 'status'>,
   permission: WorkspacePermission,
 ): boolean {
   if (

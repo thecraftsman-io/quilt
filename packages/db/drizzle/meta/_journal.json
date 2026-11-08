@@ -15,6 +15,20 @@
       "when": 1793908600034,
       "tag": "0001_auth_households",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793954456797,
+      "tag": "0002_finance_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793954737744,
+      "tag": "0003_workspace_roles",
+      "breakpoints": true
     }
   ]
 }

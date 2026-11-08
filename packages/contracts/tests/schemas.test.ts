@@ -5,6 +5,7 @@ import {
   SignUpWithEmailSchema,
   PaginationQuerySchema,
   AuthSessionSchema,
+  ApiErrorResponseSchema,
 } from '../src';
 
 describe('Contracts Schemas', () => {
@@ -37,7 +38,7 @@ describe('Contracts Schemas', () => {
   it('InviteMemberSchema validates email and role', () => {
     const valid = InviteMemberSchema.safeParse({
       email: 'member@example.com',
-      role: 'admin',
+      role: 'editor',
     });
     expect(valid.success).toBe(true);
 
@@ -134,5 +135,18 @@ describe('Contracts Schemas', () => {
     expect((parsed.session as { token?: unknown }).token).toBeUndefined();
     expect(parsed.user.name).toBe('Alex Rivera');
     expect(parsed.user.email).toBe('alex@example.com');
+  });
+
+  it('ApiErrorResponseSchema parses standardized error response payloads', () => {
+    const valid = ApiErrorResponseSchema.safeParse({
+      statusCode: 400,
+      code: 'VALIDATION_FAILED',
+      message: 'Validation failed',
+      errors: [{ path: ['email'], message: 'Invalid email' }],
+      timestamp: '2026-11-06T00:00:00.000Z',
+      path: '/api/auth/sign-in',
+      requestId: 'req-12345',
+    });
+    expect(valid.success).toBe(true);
   });
 });

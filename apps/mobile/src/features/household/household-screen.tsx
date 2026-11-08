@@ -1,159 +1,139 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
-import Feather from '@expo/vector-icons/Feather';
-import { CreateOrganizationSchema } from '@quilt/contracts';
 import { Button, Card, Text, TextField, View, useQuiltTheme } from '@quilt/ui';
+import { CreateOrganizationSchema } from '@quilt/contracts';
+import { membersApi } from '../../lib/client/members';
 import { useAppStore } from '../../state/app-store';
+import { useAction } from '../finance/hooks';
 import { EntryLayout } from '../auth/components/entry-layout';
 
 export function HouseholdScreen() {
-  const session = useAppStore((state) => state.session);
-  const households = useAppStore((state) => state.households);
-  const householdsStatus = useAppStore((state) => state.householdsStatus);
-  const householdsError = useAppStore((state) => state.householdsError);
-  const loadHouseholds = useAppStore((state) => state.loadHouseholds);
-  const create = useAppStore((state) => state.createHousehold);
-  const logout = useAppStore((state) => state.signOut);
-  const authPending = useAppStore((state) => state.authPending);
-  const householdPending = useAppStore((state) => state.householdPending);
-  const pending = authPending || householdPending;
+  const router = useRouter();
   const { colors } = useQuiltTheme();
+  const action = useAction();
+  const session = useAppStore((s) => s.session);
+  const households = useAppStore((s) => s.households);
+  const status = useAppStore((s) => s.householdsStatus);
+  const error = useAppStore((s) => s.householdsError);
+  const load = useAppStore((s) => s.loadHouseholds);
+  const create = useAppStore((s) => s.createHousehold);
+  const signOut = useAppStore((s) => s.signOut);
   const [name, setName] = useState('');
-  const [fieldError, setFieldError] = useState<string>();
-  const [error, setError] = useState<string>();
-  const busy = useRef(false);
-  const createHousehold = async () => {
-    if (busy.current) return;
-    const result = CreateOrganizationSchema.safeParse({ name });
-    if (!result.success) {
-      setFieldError(result.error.issues[0]?.message);
-      return;
-    }
-    setFieldError(undefined);
-    setError(undefined);
-    busy.current = true;
-    try {
-      await create(result.data.name);
-      setName('');
-    } catch {
-      setError('We couldn’t reach Quilt. Check your connection and try again.');
-    } finally {
-      busy.current = false;
-    }
-  };
-  const signOut = async () => {
-    if (busy.current) return;
-    busy.current = true;
-    setError(undefined);
-    try {
-      await logout();
-    } catch {
-      setError('We couldn’t reach Quilt. Please try again.');
-    } finally {
-      busy.current = false;
-    }
-  };
+  const [invitation, setInvitation] = useState('');
+  const [message, setMessage] = useState('');
   return (
     <EntryLayout>
-      <View className="w-full max-w-[560px] self-center px-6 py-10 gap-8">
-        <View className="gap-3">
-          <Text variant="display" style={{ fontSize: 36, lineHeight: '44px' }}>
-            Good to see you
-            {session?.user.name ? `, ${session.user.name.split(' ')[0]}` : ''}.
-          </Text>
-          <Text tone="textMuted">{session?.user.email}</Text>
-        </View>
-        {householdsStatus === 'loading' || householdsStatus === 'idle' ? (
+      <View className="w-full max-w-[640px] self-center px-6 py-10 gap-6">
+        <Text variant="heading">
+          Good to see you
+          {session?.user.name ? `, ${session.user.name.split(' ')[0]}` : ''}.
+        </Text>
+        <Text tone="textMuted">Choose a household to open its finances.</Text>
+        {status === 'loading' || status === 'idle' ? (
           <ActivityIndicator
             color={colors.primary}
             accessibilityLabel="Loading households"
           />
-        ) : householdsError ? (
+        ) : error ? (
           <Card>
-            <Text tone="danger" role="alert">
-              We couldn’t load your households.
+            <Text role="alert" tone="danger">
+              {error}
             </Text>
             <Button
               label="Try again"
-              variant="secondary"
               onPress={() => {
-                void loadHouseholds();
+                void load();
               }}
             />
           </Card>
-        ) : households.length ? (
-          <View className="gap-4">
-            <Text variant="heading">Your households</Text>
-            {households.map((organization) => (
-              <Card
-                key={organization.id}
-                className="flex-row items-center gap-4"
-              >
-                <Feather
-                  name="home"
-                  size={24}
-                  color={colors.primary}
-                  accessible={false}
-                />
-                <View className="flex-1 gap-1">
-                  <Text variant="title">{organization.name}</Text>
-                  <Text variant="caption" tone="textMuted">
-                    Household created. Your shared plans can begin here.
-                  </Text>
-                </View>
-              </Card>
-            ))}
-          </View>
         ) : (
-          <Card>
-            <Feather
-              name="home"
-              size={28}
-              color={colors.primary}
-              accessible={false}
-            />
-            <Text variant="heading">Give your household a home.</Text>
-            <Text tone="textMuted">
-              Choose a name for the place where you’ll keep your shared spending
-              and plans.
-            </Text>
-            <TextField
-              label="Household name"
-              placeholder="e.g. Our place"
-              value={name}
-              onChangeText={(value) => {
-                setName(value);
-                setFieldError(undefined);
-                setError(undefined);
-              }}
-              error={fieldError}
-              editable={!pending}
-              maxLength={100}
-              returnKeyType="go"
-              onSubmitEditing={() => {
-                void createHousehold();
-              }}
-            />
-            <Button
-              label="Create household"
-              loading={pending}
-              onPress={() => {
-                void createHousehold();
-              }}
-            />
-          </Card>
+          households.map((household) => (
+            <Card key={household.id}>
+              <Text variant="title">{household.name}</Text>
+              <Button
+                label={`Open ${household.name}`}
+                onPress={() =>
+                  router.push({
+                    pathname: '/workspace/[workspaceId]/[screen]',
+                    params: { workspaceId: household.id, screen: 'overview' },
+                  })
+                }
+              />
+            </Card>
+          ))
         )}
-        {error && (
+        <Card>
+          <Text variant="title">
+            {households.length
+              ? 'Create another household'
+              : 'Give your household a home'}
+          </Text>
+          <TextField
+            label="Household name"
+            placeholder="e.g. Our place"
+            value={name}
+            onChangeText={setName}
+            maxLength={100}
+            editable={!action.pending}
+          />
+          <Button
+            label="Create household"
+            loading={action.pending}
+            onPress={() => {
+              void action.run(async () => {
+                const input = CreateOrganizationSchema.parse({ name });
+                await create(input.name);
+                setName('');
+                return true;
+              });
+            }}
+          />
+        </Card>
+        <Card>
+          <Text variant="title">Have an invitation?</Text>
+          <TextField
+            label="Invitation code"
+            value={invitation}
+            onChangeText={setInvitation}
+            autoCapitalize="none"
+            editable={!action.pending}
+          />
+          <Button
+            label="Join household"
+            loading={action.pending}
+            onPress={() => {
+              void action.run(async () => {
+                if (!invitation.trim())
+                  throw new Error('Enter your invitation code.');
+                await membersApi.accept(invitation.trim());
+                await load();
+                setInvitation('');
+                setMessage(
+                  'You’ve joined the household. Open it above to get started.',
+                );
+                return true;
+              });
+            }}
+          />
+          {Boolean(message) && (
+            <Text accessibilityLiveRegion="polite">{message}</Text>
+          )}
+        </Card>
+        {Boolean(action.error) && (
           <Text role="alert" tone="danger">
-            {error}
+            {action.error}
           </Text>
         )}
         <Button
           label="Sign out"
           variant="secondary"
-          disabled={pending}
+          loading={action.pending}
           onPress={() => {
-            void signOut();
+            void action.run(async () => {
+              await signOut();
+              return true;
+            });
           }}
         />
       </View>

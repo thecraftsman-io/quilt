@@ -5,6 +5,7 @@ import type { Database } from '@quilt/db';
 import { schema } from '@quilt/db';
 import { betterAuth } from 'better-auth';
 import { organization } from 'better-auth/plugins';
+import { memberAc, ownerAc } from 'better-auth/plugins/organization/access';
 import {
   APIError,
   createAuthMiddleware,
@@ -118,6 +119,23 @@ export function createAuth(db: Database, options: AuthConfigOptions) {
           }
         }
         if (ctx.path.startsWith('/organization/')) {
+          if (
+            [
+              '/organization/invite-member',
+              '/organization/update-member-role',
+              '/organization/add-member',
+            ].includes(ctx.path)
+          ) {
+            const body = ctx.body as { role?: unknown } | undefined;
+            if (
+              typeof body?.role !== 'string' ||
+              !['owner', 'editor', 'viewer'].includes(body.role)
+            )
+              throw new APIError('BAD_REQUEST', {
+                code: 'INVALID_ROLE',
+                message: 'Choose owner, editor, or viewer.',
+              });
+          }
           const session = await getSessionFromCtx(ctx, {
             disableCookieCache: true,
           });
@@ -144,7 +162,18 @@ export function createAuth(db: Database, options: AuthConfigOptions) {
       },
     },
     secondaryStorage,
-    plugins: [organization(), expo()],
+    plugins: [
+      organization({
+        roles: {
+          owner: ownerAc,
+          editor: memberAc,
+          viewer: memberAc,
+          admin: memberAc,
+          member: memberAc,
+        },
+      }),
+      expo(),
+    ],
   });
 }
 

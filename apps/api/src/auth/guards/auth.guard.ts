@@ -7,11 +7,11 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { fromNodeHeaders } from 'better-auth/node';
-import type { Request } from 'express';
+import type { FastifyRequest } from 'fastify';
 import { AuthService } from '../auth.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends FastifyRequest {
   user?: unknown;
   session?: unknown;
 }
@@ -38,6 +38,7 @@ export class AuthGuard implements CanActivate {
 
     const session = await this.authService.auth.api.getSession({
       headers,
+      query: { disableCookieCache: true },
     });
 
     if (!session) {

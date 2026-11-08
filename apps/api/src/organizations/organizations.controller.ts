@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UsePipes,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import {
   CreateOrganizationSchema,
   InviteMemberSchema,
@@ -14,7 +6,7 @@ import {
   type InviteMemberInput,
 } from '@quilt/contracts';
 import { fromNodeHeaders } from 'better-auth/node';
-import type { Request } from 'express';
+import type { FastifyRequest } from 'fastify';
 import { AuthService } from '../auth/auth.service';
 import { CurrentSession } from '../auth/decorators/current-session.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -36,17 +28,17 @@ export class OrganizationsController {
   }
 
   @Get()
-  async listOrganizations(@Req() req: Request) {
+  async listOrganizations(@Req() req: FastifyRequest) {
     return this.authService.auth.api.listOrganizations({
       headers: fromNodeHeaders(req.headers),
     });
   }
 
   @Post()
-  @UsePipes(new ZodValidationPipe(CreateOrganizationSchema))
   async createOrganization(
-    @Body() body: CreateOrganizationInput,
-    @Req() req: Request,
+    @Body(new ZodValidationPipe(CreateOrganizationSchema))
+    body: CreateOrganizationInput,
+    @Req() req: FastifyRequest,
   ) {
     return this.authService.auth.api.createOrganization({
       headers: fromNodeHeaders(req.headers),
@@ -59,11 +51,10 @@ export class OrganizationsController {
   }
 
   @Post(':id/invite')
-  @UsePipes(new ZodValidationPipe(InviteMemberSchema))
   async inviteMember(
     @Param('id') organizationId: string,
-    @Body() body: InviteMemberInput,
-    @Req() req: Request,
+    @Body(new ZodValidationPipe(InviteMemberSchema)) body: InviteMemberInput,
+    @Req() req: FastifyRequest,
   ) {
     return this.authService.auth.api.createInvitation({
       headers: fromNodeHeaders(req.headers),

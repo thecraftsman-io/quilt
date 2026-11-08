@@ -1,0 +1,169 @@
+---
+title: Finance API
+description: Workspace-scoped contracts, endpoints, permissions, and persistence for the first finance slice.
+---
+
+The first finance slice implements accounts, categories, merchants, tags,
+transactions, monthly budgets, tracked goals, goal contributions, workspace
+preferences, and balance/cash-flow reports. Authenticated mobile and web screens
+use these endpoints under `/workspace/:workspaceId`. The public demo and sample
+data entry points have been removed.
+
+## Workspace boundary and permissions
+
+An existing household organization ID is the workspace ID in these routes.
+The older standalone `workspaces` table is not used for finance authorization.
+Every request requires a verified session, and every database operation checks
+current household membership. A session's active organization is not trusted
+as proof of membership.
+
+| Role   | Read shared finances | Edit finances | Edit workspace preferences / manage members |
+| ------ | -------------------- | ------------- | ------------------------------------------- |
+| Owner  | Yes                  | Yes           | Yes                                         |
+| Editor | Yes                  | Yes           | No                                          |
+| Viewer | Yes                  | No            | No                                          |
+
+The migration maps legacy `admin` and `member` roles to `editor`; the auth
+plugin also removes their membership-management permissions. New invitations
+accept `owner`, `editor`, or `viewer`. Owners manage membership through the
+existing Better Auth organization endpoints. Private financial accounts are
+not part of this slice: all members can read all household accounts.
+
+Non-members receive 404. References are resolved inside the requested workspace;
+foreign IDs cannot select or alter another household's data. Financial responses
+use `Cache-Control: no-store`. Browser writes require an approved Origin;
+native clients can omit Origin. Body contracts reject client-supplied workspace,
+actor, identity, version, provenance, and audit metadata.
+
+## Endpoints
+
+All paths below start with `/api/workspaces/:workspaceId`.
+
+| Method | Path                                                  | Purpose                                               |
+| ------ | ----------------------------------------------------- | ----------------------------------------------------- |
+| GET    | `/access`                                             | Read the household name and current effective role    |
+| GET    | `/:resource?limit=50&offset=0`                        | Page through records; maximum page size 100           |
+| POST   | `/:resource`                                          | Create an aggregate                                   |
+| GET    | `/:resource/:id`                                      | Read a record                                         |
+| PUT    | `/:resource/:id`                                      | Replace editable data using the expected version      |
+| POST   | `/transactions/:id/void`                              | Exclude activity while retaining its history          |
+| POST   | `/transactions/:id/restore`                           | Restore voided activity after revalidation            |
+| GET    | `/summary?month=2026-01&currency=EUR&asOf=2026-01-31` | Cash flow and account balances                        |
+| GET    | `/budgets/:id/progress?asOf=2026-01-31`               | Budget spending, remaining amount, and category lines |
+| GET    | `/goals/:id/progress?asOf=2026-01-31`                 | Tracked goal progress                                 |
+
+Transaction lists additionally accept `accountId`, `kind`, `status`, `month`,
+`search` (note, reason, or merchant name), and `voided=all|active|voided`.
+Filters and pagination run on the server; reports use complete history.
+
+Resources are `accounts`, `categories`, `merchants`, `tags`, `transactions`,
+`budgets`, `goals`, `contributions`, and `settings`. Contributions are immutable:
+record a contribution or withdrawal to correct progress. A settings record's
+ID is the workspace ID; one settings record is allowed per workspace.
+
+`@quilt/contracts` exports `FinanceDataSchemas`, `FinanceRecordSchemas`,
+`FinanceCreateInput<Resource>`, `FinanceUpdateInput<Resource>`,
+`FinancePage<Resource>`, `FinanceSummarySchema`, and endpoint path constants.
+Money uses decimal strings and explicit currency. This slice supports EUR, USD,
+and GBP with at most two fractional digits. Dates use `YYYY-MM-DD`.
+
+Create bodies have this envelope:
+
+```json
+{
+  "operationId": "1f33ba88-41c0-43af-a632-3c93f682d99f",
+  "data": {
+    "name": "Everyday account",
+    "kind": "bank",
+    "currency": "EUR",
+    "openingBalance": { "amount": "1000", "currency": "EUR" },
+    "openingBalanceDate": "2026-01-01",
+    "archived": false
+  }
+}
+```
+
+Updates add `expectedVersion` alongside `operationId` and `data`. They replace
+the editable payload, not individual fields. Void/restore commands contain
+`operationId`, `expectedVersion`, and a nonempty `reason`.
+
+Reuse the same operation ID when retrying the same request after a lost response.
+Successful retries return the original result. Reusing it for another payload
+returns 409. The scope includes the workspace and authenticated actor; permission
+is checked again before returning a cached result. Stale record versions return
+409 with `currentVersion`.
+
+## Financial behavior
+
+Server adapters use the domain validators for accounts, transactions, budgets,
+and goals. Transaction allocations and transfer legs save as one aggregate.
+References must exist in the same workspace; archived organization records
+remain readable but cannot be selected in new financial writes.
+
+Opening balances are end-of-day checkpoints. Booked activity must fall after
+the account's checkpoint and no later than today in the workspace time zone
+(UTC before preferences are created). Pending activity has no booking date.
+Once an account has transaction history, its currency and opening checkpoint
+are locked; use an adjustment for later corrections.
+
+Refunds may be unlinked. Linked refunds require a booked original expense in
+the same workspace and currency; cumulative active refunds, including pending
+refunds, cannot exceed it. An expense with active linked refunds, or a
+transaction with linked goal contributions, cannot be edited or voided.
+
+Budgets are calendar-month envelopes with an overall limit and category lines.
+Only one active budget per month and currency is accepted. Goal progress records
+do not move money; withdrawals cannot exceed progress. Optional transaction
+links must identify booked transfers in the goal currency, and funding cannot
+be allocated beyond the relevant transfer leg.
+
+Cash-flow reports use booking dates, count refunds as money in, and exclude
+pending/voided activity, transfers, and balance adjustments. Account balances
+use the domain's checkpoint calculator. Each currency remains separate; no
+exchange-rate conversion or forecast is implied.
+
+Budget progress follows activity dates; refunds reduce spending in their activity
+month. Both budget and goal progress are calculated on the server as of the
+requested date. A goal's start date is locked once progress has been recorded.
+
+## Persistence and local validation
+
+Drizzle migrations create a workspace-scoped aggregate store, operation results,
+and an audit log. Whole aggregates are JSONB documents with relational workspace,
+identity, and version constraints. They are parsed again when read. Writes run
+inside PostgreSQL transactions, serialize per workspace, lock the membership
+row against concurrent revocation, compare versions, and save audit history and
+idempotency results atomically. Database statements and lock waits are bounded.
+
+Review and apply the new migrations to the intended database with `pnpm db:migrate`.
+They have been applied to the local development database and an isolated test
+database during development.
+The membership uniqueness migration deliberately fails if duplicate memberships
+exist rather than guessing which membership to retain.
+
+```sh
+pnpm --filter @quilt/api test
+# Optional real PostgreSQL suite; use a dedicated database named quilt_test:
+QUILT_FINANCE_TEST_DATABASE_URL=postgresql://.../quilt_test pnpm --filter @quilt/api test
+pnpm --filter @quilt/contracts test
+```
+
+The integration suite creates and removes its own schema. It exercises real
+Fastify routes and PostgreSQL transactions with a test authentication provider;
+it complements sign-in and save/reload checks against the connected web app.
+
+Recurring schedules and settlements, statement reconciliation, receipt storage
+and extraction, import review, and automatic occurrence generation remain
+subsequent slices and are not exposed as working screens. Statement comparison
+and balance adjustments are available; formal statement reconciliation is not. No endpoint pretends that an OCR job,
+bank import, or payment has run when it has not.
+
+## Connected client behavior
+
+The client validates responses with shared contracts and uses cookies on web
+and the Better Auth cookie bridge on native. Saves await server confirmation;
+network failures retain the operation ID and offer a confirmation retry before
+allowing another mutation. Version conflicts require reopening the record.
+Household changes unmount financial state, and foreground refreshes recheck
+membership. Viewer controls are read-only; owner membership and preferences
+controls are also enforced by the API.

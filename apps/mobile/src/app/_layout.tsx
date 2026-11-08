@@ -55,6 +55,7 @@ function RootNavigator() {
         </Stack.Protected>
         <Stack.Protected guard={authenticated}>
           <Stack.Screen name="home" />
+          <Stack.Screen name="workspace" />
         </Stack.Protected>
         <Stack.Screen name="verify-email" />
       </Stack>

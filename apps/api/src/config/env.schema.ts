@@ -11,6 +11,9 @@ export const EnvSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .optional(),
     CORS_ORIGINS: z
       .string()
       .default('http://localhost:8081,http://localhost:8082'),

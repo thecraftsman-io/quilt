@@ -44,11 +44,11 @@ export type UpdateOrganizationInput = z.infer<typeof UpdateOrganizationSchema>;
 
 export const InviteMemberSchema = z.object({
   email: z.email('Invalid email address'),
-  role: z.enum(['admin', 'member', 'owner']).default('member'),
+  role: z.enum(['owner', 'editor', 'viewer']).default('editor'),
 });
 export type InviteMemberInput = z.infer<typeof InviteMemberSchema>;
 
 export const UpdateMemberRoleSchema = z.object({
-  role: z.enum(['admin', 'member', 'owner']),
+  role: z.enum(['owner', 'editor', 'viewer']),
 });
 export type UpdateMemberRoleInput = z.infer<typeof UpdateMemberRoleSchema>;
