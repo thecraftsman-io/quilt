@@ -152,6 +152,41 @@ describe('Android actions', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      'Button',
+      () =>
+        Button({
+          label: 'Create account',
+          className: 'w-full',
+          style: { opacity: 0.8 },
+        }),
+    ],
+    ['IconButton', () => IconButton({ 'aria-label': 'Switch theme' })],
+    ['Pressable', () => Pressable({ 'aria-label': 'Open household' })],
+  ] as const)(
+    '%s includes native padding and borders inside its assigned width',
+    (_name, render) => {
+      const element = render();
+      if (!isValidElement<Record<string, unknown>>(element))
+        throw new Error('Missing control');
+      const resolved = nativeTag(element.props).props;
+      const style = Object.assign(
+        {},
+        ...[resolved.style].flat(Infinity).filter(Boolean),
+      ) as Record<string, unknown>;
+      // Native html.button defaults to content-box. Explicit host styles must
+      // override that default, including when a caller supplies its own style.
+      const buttonSource = htmlTags.slice(
+        htmlTags.indexOf('var button ='),
+        htmlTags.indexOf('var code ='),
+      );
+      const defaultSizing = /boxSizing: "([^"]+)"/.exec(buttonSource)?.[1];
+      expect(style.boxSizing ?? defaultSizing).toBe('border-box');
+      if (_name === 'Button') expect(style.opacity).toBe(0.8);
+    },
+  );
+
   it('keeps web click handlers and accessibility attributes intact', () => {
     platform.OS = 'web';
     try {

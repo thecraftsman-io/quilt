@@ -120,7 +120,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   };
   return (
     <AuthLayout>
-      <View className="gap-8">
+      <View className="w-full max-w-full gap-8">
         <View className="gap-3">
           <Text
             variant="display"
@@ -130,7 +130,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
           </Text>
           <Text tone="textMuted">{content.subtitle}</Text>
         </View>
-        <View className="gap-5">
+        <View className="w-full max-w-full gap-5">
           {isSignUp && (
             <TextField
               ref={nameRef}

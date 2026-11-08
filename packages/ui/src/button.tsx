@@ -5,7 +5,7 @@ import { getActionProps, type ActionProps } from './action-props';
 
 const ButtonFrame = styled(
   html.button,
-  'min-h-[48px] min-w-[48px] px-6 py-3 rounded-md border flex flex-row items-center justify-center gap-2 relative hover:translate-y-[-1px] press:translate-y-[1px] focus-visible:border-text disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none',
+  'box-border max-w-full min-h-[48px] min-w-[48px] px-6 py-3 rounded-md border flex flex-row items-center justify-center gap-2 relative hover:translate-y-[-1px] press:translate-y-[1px] focus-visible:border-text disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none',
   {
     displayName: 'QuiltButton',
     variants: {

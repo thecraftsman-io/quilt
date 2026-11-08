@@ -46,7 +46,7 @@ export function VerificationScreen() {
   const confirming = Boolean(token) || status === 'verifying';
   return (
     <AuthLayout>
-      <View className="gap-6">
+      <View className="w-full max-w-full gap-6">
         <View className="self-start rounded-lg bg-surfaceMuted p-4">
           <Feather
             name={verified ? 'check-circle' : 'mail'}
@@ -74,9 +74,13 @@ export function VerificationScreen() {
           </Text>
         </View>
         {verified ? (
-          <Button label="Sign in" onPress={() => router.replace('/sign-in')} />
+          <Button
+            label="Sign in"
+            onPress={() => router.replace('/sign-in')}
+            className="w-full"
+          />
         ) : (
-          <View className="gap-5">
+          <View className="w-full max-w-full gap-5">
             {confirming && (
               <View role="status" aria-live="polite">
                 <ActivityIndicator color={colors.primary} />

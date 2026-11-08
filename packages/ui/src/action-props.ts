@@ -21,6 +21,12 @@ export function getActionProps({
 }: ActionProps): ActionProps {
   return {
     ...props,
+    // Native HTML controls default to content-box. A full-width action must
+    // include its padding and borders inside that width, as native Views do.
+    style:
+      Platform.OS === 'web'
+        ? props.style
+        : [props.style, { boxSizing: 'border-box' }],
     // Native html.button becomes a React Native Pressable only with onClick.
     onClick: props.disabled
       ? undefined

@@ -24,7 +24,7 @@ export function AuthLayout({ children }: PropsWithChildren) {
   return (
     <EntryLayout>
       <View className="flex-1 w-full max-w-[1200px] self-center pb-12 gap-16 flex-col px-6 pt-8 lg:flex-row lg:px-10 lg:pt-6">
-        <View className="flex-1 justify-center items-center py-0 lg:py-10">
+        <View className="flex-1 w-full justify-center items-center py-0 lg:py-10">
           <View className="w-full max-w-[400px]">{children}</View>
         </View>
         <View className="hidden lg:flex flex-1 rounded-[28px] p-12 bg-surfaceMuted justify-center min-h-[560px] gap-9">

@@ -18,13 +18,16 @@ export function EntryLayout({ children }: PropsWithChildren) {
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, width: '100%', backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        style={{ flex: 1, width: '100%' }}
         contentContainerStyle={{
           flexGrow: 1,
+          width: '100%',
+          maxWidth: '100%',
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
         }}
