@@ -6,14 +6,24 @@ description: SMTP, React Email templates, shared design components, and account 
 Email/password accounts must confirm their email before using a household.
 Registration sends an email and opens `/verify-email`; it does not create a
 session. An unverified sign-in opens the same screen. Signed links expire after
-one hour. The email link opens a page with a **Confirm my email** button, so
-loading or previewing the link alone does not verify an account.
+one hour. Opening the email link automatically verifies the address, then displays
+**Email confirmed** with a **Sign in** button. There is no email field or second
+confirmation button. Automated link previews may also trigger verification.
+
+Signup with an existing email returns an explicit account-already-exists error
+and stays on the signup form with a sign-in prompt. This applies to verified and
+unverified accounts; it does not send another verification email. Unlike Better
+Auth’s default masked signup response, this intentionally reveals that the
+address is registered. Unverified users can sign in and resend from the inbox
+screen.
 
 After confirmation, the user signs in with their password. Verification does not
 automatically create a session or switch the browser to another account. The
 confirmation route remains accessible even if another account is already signed
-in. Invalid/expired links show recovery text and an email field to request a new
-link. Resends use generic responses to avoid revealing account existence.
+in. Invalid/expired links show recovery text. When the pending address is known,
+users can resend without re-entering it; otherwise they return to sign-in to
+request a fresh link. Resends use generic responses to avoid revealing account
+existence.
 
 ## SMTP service
 
@@ -34,9 +44,9 @@ messages locally; it does not deliver them to external inboxes.
 
 Configure the API environment using `apps/api/.env.example`:
 
-| Variable                      | Local default           | Production                                               |
+| Variable                      | Local (.env.example)    | Production                                               |
 | ----------------------------- | ----------------------- | -------------------------------------------------------- |
-| `APP_URL`                     | `http://localhost:8082` | Required HTTPS app URL hosting `/verify-email`           |
+| `APP_URL`                     | `http://localhost:8081` | Required HTTPS app URL hosting `/verify-email`           |
 | `SMTP_HOST`                   | `localhost`             | Required SMTP server                                     |
 | `SMTP_PORT`                   | `1025`                  | `587`, or `465` with implicit TLS                        |
 | `SMTP_SECURE`                 | `false`                 | `true` for port 465; otherwise STARTTLS                  |

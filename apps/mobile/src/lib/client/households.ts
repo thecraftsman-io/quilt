@@ -4,8 +4,28 @@ import { ClientError, throwResponseError } from './errors';
 
 export type { Household };
 
-export function createHouseholdsApi(authClient: RawAuthClient) {
+export function createHouseholdsApi(
+  authClient: RawAuthClient,
+  baseUrl: string,
+) {
   return {
+    async ensureDefault(): Promise<Household> {
+      const result = await authClient.$fetch(
+        `${baseUrl.replace(/\/$/, '')}/api/organizations/default`,
+        {
+          method: 'POST',
+          credentials: 'include',
+        },
+      );
+      throwResponseError(result.error);
+      return HouseholdSchema.parse(result.data);
+    },
+    async setActive(id: string) {
+      const result = await authClient.organization.setActive({
+        organizationId: id,
+      });
+      throwResponseError(result.error);
+    },
     async list(): Promise<Household[]> {
       const result = await authClient.organization.list();
       throwResponseError(result.error);

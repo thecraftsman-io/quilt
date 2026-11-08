@@ -21,6 +21,9 @@ import type { AuthGuard as Guard } from '../src/auth/guards/auth.guard';
 import type { AuthService as Auth } from '../src/auth/auth.service';
 import type { DatabaseService as Database } from '../src/database/database.service';
 
+import type { OrganizationsController as Organizations } from '../src/organizations/organizations.controller';
+import type { DefaultHouseholdService as Defaults } from '../src/organizations/default-household.service';
+
 const connection = process.env.QUILT_FINANCE_TEST_DATABASE_URL;
 const require = createRequire(import.meta.url);
 const { FinanceController } =
@@ -44,6 +47,14 @@ const { AuthGuard } = require('../dist/auth/guards/auth.guard.js') as {
 const { AuthService } = require('../dist/auth/auth.service.js') as {
   AuthService: typeof Auth;
 };
+const { OrganizationsController } =
+  require('../dist/organizations/organizations.controller.js') as {
+    OrganizationsController: typeof Organizations;
+  };
+const { DefaultHouseholdService } =
+  require('../dist/organizations/default-household.service.js') as {
+    DefaultHouseholdService: typeof Defaults;
+  };
 const { DatabaseService } = require('../dist/database/database.service.js') as {
   DatabaseService: typeof Database;
 };
@@ -97,9 +108,10 @@ describe.skipIf(!connection)('Finance HTTP + PostgreSQL integration', () => {
     }
     class TestModule {}
     Module({
-      controllers: [FinanceController],
+      controllers: [FinanceController, OrganizationsController],
       providers: [
         FinanceService,
+        DefaultHouseholdService,
         FinanceRepository,
         FinanceBoundaryGuard,
         { provide: DatabaseService, useValue: { db: database.db } },
@@ -157,7 +169,7 @@ describe.skipIf(!connection)('Finance HTTP + PostgreSQL integration', () => {
         [actor, `${actor}@example.test`],
       );
     await database.pool.query(
-      "INSERT INTO organization (id, name) VALUES ('w1','First household'),('w2','Other household')",
+      "INSERT INTO organization (id, name, slug) VALUES ('w1','First household','first'),('w2','Other household','other')",
     );
     for (const actor of ['owner', 'editor', 'viewer'])
       await database.pool.query(
@@ -205,6 +217,65 @@ describe.skipIf(!connection)('Finance HTTP + PostgreSQL integration', () => {
     expect(response.statusCode, response.body).toBe(201);
     return FinanceRecordSchemas.accounts.parse(response.json());
   };
+
+  it('creates one default household and owner membership across concurrent launches', async () => {
+    await database.pool.query(
+      'INSERT INTO "user" (id, name, email, email_verified) VALUES ($1,$2,$3,true)',
+      ['new-user', 'Alex', 'new@example.test'],
+    );
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        app.inject({
+          method: 'POST',
+          url: '/api/organizations/default',
+          headers: { cookie: 'test-user=new-user' },
+        }),
+      ),
+    );
+    const households = responses.map((response) => {
+      expect(response.statusCode, response.body).toBe(201);
+      return response.json() as { id: string; name: string };
+    });
+    expect(new Set(households.map((h) => h.id)).size).toBe(1);
+    expect(households[0]?.name).toBe('My household');
+    const memberships = await database.pool.query(
+      'SELECT organization_id, role FROM member WHERE user_id=$1',
+      ['new-user'],
+    );
+    expect(memberships.rows).toEqual([
+      { organization_id: households[0]?.id, role: 'owner' },
+    ]);
+    const opened = await request(
+      'GET',
+      `${households[0]!.id}/accounts`,
+      'new-user',
+    );
+    expect(opened.statusCode, opened.body).toBe(200);
+  });
+
+  it('reuses an existing household and refuses setup without a verified session', async () => {
+    const existing = await app.inject({
+      method: 'POST',
+      url: '/api/organizations/default',
+      headers: { cookie: 'test-user=owner' },
+    });
+    expect(existing.statusCode, existing.body).toBe(201);
+    expect(existing.json()).toMatchObject({
+      id: 'w1',
+      name: 'First household',
+    });
+    expect(
+      (await database.pool.query('SELECT id FROM organization')).rows,
+    ).toHaveLength(2);
+    for (const actor of ['', 'unverified']) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/organizations/default',
+        headers: actor ? { cookie: `test-user=${actor}` } : {},
+      });
+      expect(response.statusCode).toBe(actor ? 403 : 401);
+    }
+  });
 
   it('requires verified authentication, checks current membership, and blocks viewer writes', async () => {
     expect((await request('GET', 'w1/accounts', '')).statusCode).toBe(401);

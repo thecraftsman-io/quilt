@@ -1,7 +1,7 @@
 import { html, View, styled } from '@tamagui/tailwind';
 import { Spinner } from 'tamagui';
-import type { ComponentProps } from 'react';
 import { Text } from './text';
+import { getActionProps, type ActionProps } from './action-props';
 
 const ButtonFrame = styled(
   html.button,
@@ -20,10 +20,7 @@ const ButtonFrame = styled(
   },
 );
 
-export interface ButtonProps extends Omit<
-  ComponentProps<typeof html.button>,
-  'children'
-> {
+export interface ButtonProps extends Omit<ActionProps, 'children'> {
   label: string;
   variant?: 'primary' | 'secondary';
   loading?: boolean;
@@ -39,12 +36,14 @@ export function Button({
 }: ButtonProps) {
   return (
     <ButtonFrame
-      {...props}
+      {...getActionProps({
+        ...props,
+        disabled: disabled || loading,
+        'aria-label': ariaLabel ?? label,
+        'aria-busy': loading,
+      })}
       type="button"
       variant={variant}
-      disabled={disabled || loading}
-      aria-label={ariaLabel ?? label}
-      aria-busy={loading}
     >
       <View
         aria-hidden

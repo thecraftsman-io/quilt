@@ -19,8 +19,10 @@ import {
 
 export function MoreScreen() {
   const go = useNavigate();
+  const router = useRouter();
+  const { data } = useFinance();
   return (
-    <Page title="Your household" subtitle="Keep the details together.">
+    <Page title="Your household" subtitle={data.workspace.name}>
       <Card>
         <Row
           title="Organization"
@@ -36,6 +38,11 @@ export function MoreScreen() {
           title="Settings"
           subtitle="Household preferences and appearance"
           onPress={() => go('settings')}
+        />
+        <Row
+          title="Households"
+          subtitle="Switch, create, or join a household"
+          onPress={() => router.push('/households')}
         />
       </Card>
     </Page>
@@ -486,9 +493,9 @@ export function SettingsScreen() {
       </Card>
       <ErrorMessage message={action.error} />
       <Button
-        label="Switch household"
+        label="Households"
         variant="secondary"
-        onPress={() => router.replace('/home')}
+        onPress={() => router.push('/households')}
       />
       <Button
         label="Sign out"

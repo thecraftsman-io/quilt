@@ -14,22 +14,26 @@ export const EnvSchema = z
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .optional(),
-    CORS_ORIGINS: z
-      .string()
-      .default('http://localhost:8081,http://localhost:8082'),
+    CORS_ORIGINS: z.string({
+      error: 'CORS_ORIGINS is required',
+    }),
     DATABASE_URL: z.string({
       error: 'DATABASE_URL is required',
     }),
     REDIS_URL: z.string().optional(),
     REDIS_HOST: z.string().default('localhost'),
     REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
-    BETTER_AUTH_URL: z.url().default('http://localhost:3000'),
+    BETTER_AUTH_URL: z.url({
+      error: 'BETTER_AUTH_URL is required',
+    }),
     BETTER_AUTH_SECRET: z
       .string({
         error: 'BETTER_AUTH_SECRET is required',
       })
       .min(16, 'BETTER_AUTH_SECRET must be at least 16 characters'),
-    APP_URL: z.url().optional(),
+    APP_URL: z.url({
+      error: 'APP_URL is required',
+    }),
     SMTP_HOST: z.string().min(1).optional(),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
     SMTP_SECURE: booleanEnv.default(false),
@@ -43,52 +47,85 @@ export const EnvSchema = z
     GOOGLE_CLIENT_SECRET: z.string().optional(),
   })
   .superRefine((env, ctx) => {
-    if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD))
+    if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD)) {
       ctx.addIssue({
         code: 'custom',
         path: ['SMTP_USER'],
         message: 'SMTP_USER and SMTP_PASSWORD must be configured together',
       });
-    if (env.NODE_ENV === 'production') {
-      for (const key of ['APP_URL', 'SMTP_HOST', 'MAIL_FROM'] as const)
-        if (!env[key])
-          ctx.addIssue({
-            code: 'custom',
-            path: [key],
-            message: `${key} is required in production`,
-          });
-      if (env.APP_URL && !env.APP_URL.startsWith('https://'))
-        ctx.addIssue({
-          code: 'custom',
-          path: ['APP_URL'],
-          message: 'APP_URL must use HTTPS in production',
-        });
-      if (env.SMTP_REQUIRE_TLS === false && !env.SMTP_SECURE)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['SMTP_REQUIRE_TLS'],
-          message: 'SMTP must use TLS in production',
-        });
     }
-    if (
-      env.APP_URL &&
-      !['https:', 'http:'].includes(new URL(env.APP_URL).protocol)
-    )
+
+    if (env.SMTP_HOST && !env.MAIL_FROM) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MAIL_FROM'],
+        message: 'MAIL_FROM is required when SMTP_HOST is configured',
+      });
+    }
+
+    if (!['https:', 'http:'].includes(new URL(env.APP_URL).protocol)) {
       ctx.addIssue({
         code: 'custom',
         path: ['APP_URL'],
         message: 'APP_URL must use HTTP or HTTPS',
       });
+    }
+
+    if (!['https:', 'http:'].includes(new URL(env.BETTER_AUTH_URL).protocol)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['BETTER_AUTH_URL'],
+        message: 'BETTER_AUTH_URL must use HTTP or HTTPS',
+      });
+    }
+
+    if (env.NODE_ENV === 'production') {
+      for (const key of ['SMTP_HOST', 'MAIL_FROM'] as const) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} is required in production`,
+          });
+        }
+      }
+      if (!env.APP_URL.startsWith('https://')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['APP_URL'],
+          message: 'APP_URL must use HTTPS in production',
+        });
+      }
+      if (!env.BETTER_AUTH_URL.startsWith('https://')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['BETTER_AUTH_URL'],
+          message: 'BETTER_AUTH_URL must use HTTPS in production',
+        });
+      }
+      if (env.SMTP_REQUIRE_TLS === false && !env.SMTP_SECURE) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['SMTP_REQUIRE_TLS'],
+          message: 'SMTP must use TLS in production',
+        });
+      }
+    }
   })
   .transform((env) => ({
     ...env,
-    APP_URL: env.APP_URL ?? 'http://localhost:8082',
-    SMTP_HOST: env.SMTP_HOST ?? 'localhost',
     SMTP_PORT:
       env.SMTP_PORT ??
-      (env.SMTP_SECURE ? 465 : env.NODE_ENV === 'production' ? 587 : 1025),
-    SMTP_REQUIRE_TLS: env.SMTP_REQUIRE_TLS ?? env.NODE_ENV === 'production',
-    MAIL_FROM: env.MAIL_FROM ?? 'hello@quilt.local',
+      (env.SMTP_HOST
+        ? env.SMTP_SECURE
+          ? 465
+          : env.NODE_ENV === 'production'
+            ? 587
+            : 1025
+        : undefined),
+    SMTP_REQUIRE_TLS:
+      env.SMTP_REQUIRE_TLS ??
+      (env.SMTP_HOST ? env.NODE_ENV === 'production' : undefined),
     REDIS_URL:
       env.REDIS_URL && env.REDIS_URL.trim().length > 0
         ? env.REDIS_URL

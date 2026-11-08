@@ -4,7 +4,7 @@ import { ClientError } from '../../lib/client';
 import { useAppStore } from '../../state/app-store';
 import { AuthLayout } from './components/auth-layout';
 import { SignInWithEmailSchema, SignUpWithEmailSchema } from '@quilt/contracts';
-import { Button, Text, TextField, View, useQuiltTheme } from '@quilt/ui';
+import { Button, Text, TextField, View } from '@quilt/ui';
 import { PasswordField } from './components/password-field';
 
 type AuthMode = 'sign-in' | 'sign-up';
@@ -45,7 +45,6 @@ function validate(mode: AuthMode, values: Values) {
 }
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
-  const { colors } = useQuiltTheme();
   const router = useRouter();
   const [values, setValues] = useState<Values>({
     name: '',
@@ -99,16 +98,20 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         setSubmissionError(
           error instanceof ClientError && error.status === 429
             ? 'Too many attempts. Give it a moment, then try again.'
-            : error instanceof ClientError &&
-                error.code === 'SESSION_UNAVAILABLE'
-              ? 'Your session couldn’t be opened. Please sign in again.'
+            : isSignUp &&
+                error instanceof ClientError &&
+                error.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL'
+              ? 'An account with this email already exists. Sign in instead.'
               : error instanceof ClientError &&
-                  error.status >= 400 &&
-                  error.status < 500
-                ? isSignUp
-                  ? 'We couldn’t create this account. Check your details, or sign in if you already have one.'
-                  : 'That email and password don’t match. Please try again.'
-                : 'We couldn’t reach Quilt. Check your connection and try again.',
+                  error.code === 'SESSION_UNAVAILABLE'
+                ? 'Your session couldn’t be opened. Please sign in again.'
+                : error instanceof ClientError &&
+                    error.status >= 400 &&
+                    error.status < 500
+                  ? isSignUp
+                    ? 'We couldn’t create this account. Check your details, or sign in if you already have one.'
+                    : 'That email and password don’t match. Please try again.'
+                  : 'We couldn’t reach Quilt. Check your connection and try again.',
         );
       } finally {
         submitting.current = false;
@@ -121,11 +124,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         <View className="gap-3">
           <Text
             variant="display"
-            style={{
-              fontSize: 36,
-              lineHeight: '44px',
-              letterSpacing: -1.3,
-            }}
+            className="text-[36px] leading-[44px] tracking-[-1.3px]"
           >
             {content.title}
           </Text>
@@ -218,17 +217,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             <Text variant="label" tone="textMuted">
               {isSignUp ? 'Already have an account?' : 'New to Quilt?'}
             </Text>
-            <Link
-              href={isSignUp ? '/sign-in' : '/sign-up'}
-              style={{ paddingVertical: 12, paddingHorizontal: 4 }}
-            >
-              <Text variant="label" style={{ color: colors.primary }}>
+            <Link href={isSignUp ? '/sign-in' : '/sign-up'} asChild>
+              <Text variant="label" className="py-3 px-1 text-primary">
                 {isSignUp ? 'Sign in' : 'Create an account'} →
               </Text>
             </Link>
           </View>
-          <Link href="/" style={{ paddingVertical: 12 }}>
-            <Text variant="caption" tone="textMuted">
+          <Link href="/" asChild>
+            <Text variant="caption" tone="textMuted" className="py-3">
               ← About Quilt
             </Text>
           </Link>

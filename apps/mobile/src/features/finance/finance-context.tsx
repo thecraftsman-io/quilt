@@ -244,7 +244,7 @@ export function FinanceProvider({
       {data ? (
         <>
           {uncertain && (
-            <Card style={{ margin: 16 }}>
+            <Card className="m-4">
               <Text role="alert">
                 The last save wasn’t confirmed. Check its result before making
                 another change.
@@ -284,7 +284,7 @@ export function FinanceProvider({
               <Button
                 label="Back to households"
                 variant="secondary"
-                onPress={() => router.replace('/home')}
+                onPress={() => router.push('/households')}
               />
             </>
           ) : (

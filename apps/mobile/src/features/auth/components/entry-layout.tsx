@@ -38,10 +38,7 @@ export function EntryLayout({ children }: PropsWithChildren) {
                 accessible={false}
                 accessibilityIgnoresInvertColors
               />
-              <Text
-                variant="title"
-                style={{ fontSize: 23, letterSpacing: -0.8 }}
-              >
+              <Text variant="title" className="text-[23px] tracking-[-0.8px]">
                 Quilt
               </Text>
             </View>
@@ -49,7 +46,7 @@ export function EntryLayout({ children }: PropsWithChildren) {
           <IconButton
             aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} theme`}
             onPress={() => setPreference(mode === 'light' ? 'dark' : 'light')}
-            style={{ backgroundColor: 'transparent' }}
+            className="bg-transparent"
           >
             <Feather
               name={mode === 'light' ? 'moon' : 'sun'}

@@ -1,171 +1,105 @@
-import { useWindowDimensions } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
 import { Button, Text, View, useQuiltTheme } from '@quilt/ui';
 import { EntryLayout } from '../auth/components/entry-layout';
 
-function SharedPlan() {
+const illustrationSizes = {
+  mobile: {
+    frame: 'w-[186px] h-[168px] short:w-[148.8px] short:h-[134.4px]',
+    canvas: 'scale-[0.6] short:scale-[0.48]',
+  },
+  desktop: { frame: 'w-[310px] h-[280px]', canvas: 'scale-100' },
+};
+
+function SharedPlan({
+  size = 'mobile',
+}: {
+  size?: keyof typeof illustrationSizes;
+}) {
   const { colors } = useQuiltTheme();
+  const classes = illustrationSizes[size];
   return (
-    <View
-      aria-hidden
-      style={{
-        position: 'relative',
-        width: 310,
-        height: 280,
-        alignSelf: 'center',
-      }}
-    >
-      <View
-        style={{
-          position: 'absolute',
-          width: 226,
-          height: 226,
-          top: 26,
-          left: 44,
-          backgroundColor: colors.surfaceMuted,
-          borderRadius: 60,
-          transform: [{ rotate: '-12deg' }],
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          left: 12,
-          top: 30,
-          width: 224,
-          padding: 22,
-          gap: 14,
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderRadius: 20,
-          transform: [{ rotate: '-6deg' }],
-          boxShadow: '0 12px 32px rgba(12,24,16,0.07)',
-        }}
-      >
-        <View className="flex-row items-center gap-3">
-          <Feather name="home" size={18} color={colors.primary} />
-          <Text variant="label">The everyday, covered.</Text>
-        </View>
-        <View className="gap-3 border-t border-border pt-3">
-          <Text variant="caption" tone="textMuted">
-            Rent & bills
-          </Text>
-          <Text variant="caption" tone="textMuted">
-            The weekly shop
-          </Text>
-        </View>
-      </View>
-      <View
-        style={{
-          position: 'absolute',
-          right: 0,
-          bottom: 18,
-          width: 210,
-          padding: 22,
-          gap: 16,
-          backgroundColor: colors.primary,
-          borderRadius: 20,
-          transform: [{ rotate: '7deg' }],
-          boxShadow: '0 12px 28px rgba(12,24,16,0.12)',
-        }}
-      >
-        <Feather name="sunrise" size={26} color={colors.onPrimary} />
-        <Text variant="title" style={{ color: colors.onPrimary }}>
-          Room for{`\n`}the next chapter.
-        </Text>
+    <View aria-hidden className={`relative self-center ${classes.frame}`}>
+      <View className="absolute inset-0 items-center justify-center">
         <View
-          style={{
-            height: 3,
-            width: 56,
-            borderRadius: 2,
-            backgroundColor: colors.onPrimary,
-            opacity: 0.5,
-          }}
-        />
+          className={`relative shrink-0 w-[310px] h-[280px] ${classes.canvas}`}
+        >
+          <View className="absolute w-[226px] h-[226px] top-[26px] left-[44px] bg-surfaceMuted rounded-[60px] rotate-[-12deg]" />
+          <View className="absolute left-3 top-[30px] w-[224px] p-[22px] gap-[14px] bg-surface border border-border rounded-[20px] rotate-[-6deg] shadow-[0_12px_32px_rgba(12,24,16,0.07)]">
+            <View className="flex-row items-center gap-3">
+              <Feather name="home" size={18} color={colors.primary} />
+              <Text variant="label">The everyday, covered.</Text>
+            </View>
+            <View className="gap-3 border-t border-border pt-3">
+              <Text variant="caption" tone="textMuted">
+                Rent & bills
+              </Text>
+              <Text variant="caption" tone="textMuted">
+                The weekly shop
+              </Text>
+            </View>
+          </View>
+          <View className="absolute right-0 bottom-[18px] w-[210px] p-[22px] gap-4 bg-primary rounded-[20px] rotate-[7deg] shadow-[0_12px_28px_rgba(12,24,16,0.12)]">
+            <Feather name="sunrise" size={26} color={colors.onPrimary} />
+            <Text variant="title" className="text-onPrimary">
+              Room for{`\n`}the next chapter.
+            </Text>
+            <View className="h-[3px] w-[56px] rounded-[2px] bg-onPrimary opacity-50" />
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
 export function WelcomeScreen() {
-  const { width } = useWindowDimensions();
   const { colors } = useQuiltTheme();
   const router = useRouter();
-  const wide = width >= 960;
   return (
     <EntryLayout>
-      <View
-        style={{
-          flex: 1,
-          width: '100%',
-          maxWidth: 1120,
-          alignSelf: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: wide ? 48 : 24,
-          paddingTop: wide ? 48 : 16,
-          paddingBottom: 36,
-          gap: wide ? 64 : 32,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: wide ? 'row' : 'column',
-            alignItems: wide ? 'center' : 'stretch',
-            gap: wide ? 48 : 28,
-          }}
-        >
-          {!wide && <SharedPlan />}
-          <View style={{ flex: wide ? 1.25 : undefined, gap: 24 }}>
-            <View className="gap-4">
+      <View className="grow shrink-0 w-full max-w-[1120px] self-center justify-center px-6 pt-4 pb-6 gap-6 short:pt-2 short:pb-4 short:gap-4 lg:px-12 lg:py-8 lg:gap-10">
+        <View className="flex-col items-stretch gap-5 lg:flex-row lg:items-center lg:gap-12">
+          <View className="lg:hidden">
+            <SharedPlan />
+          </View>
+          <View className="gap-5 flex items-center lg:flex-[1.25] lg:gap-6 lg:items-stretch">
+            <View className="gap-3">
               <Text
                 variant="display"
-                style={{
-                  fontSize: wide ? 56 : 38,
-                  lineHeight: wide ? '62px' : '44px',
-                  letterSpacing: wide ? -2.2 : -1.4,
-                }}
+                className="text-[30px] leading-[36px] tracking-[-1.4px] phone:text-[34px] phone:leading-[40px] lg:text-[56px] lg:leading-[62px] lg:tracking-[-2.2px]"
               >
                 Less “who paid?”{`\n`}More “what’s next?”
               </Text>
               <Text
                 tone="textMuted"
-                style={{ maxWidth: 440, fontSize: 17, lineHeight: '27px' }}
+                className="max-w-[440px] text-base leading-[24px] lg:text-[17px] lg:leading-[27px]"
               >
                 A home for the money you share. Keep household spending,
                 budgets, and savings goals in one clear picture.
               </Text>
             </View>
-            <View
-              style={{
-                width: '100%',
-                maxWidth: wide ? 300 : undefined,
-                gap: 12,
-              }}
-            >
+            <View className="w-full max-w-[240px] gap-2">
               <Button
                 label="Create an account"
                 onPress={() => router.push('/sign-up')}
               />
-              <Link
-                href="/sign-in"
-                style={{ alignSelf: 'center', paddingVertical: 14 }}
-              >
-                <Text variant="label" tone="textMuted">
+              <Link href="/sign-in" asChild>
+                <Text
+                  variant="label"
+                  tone="textMuted"
+                  className="self-center py-3"
+                >
                   Already a member?{' '}
-                  <Text variant="label" style={{ color: colors.primary }}>
+                  <Text variant="label" className="text-primary">
                     Sign in →
                   </Text>
                 </Text>
               </Link>
             </View>
           </View>
-          {wide && (
-            <View style={{ flex: 1 }}>
-              <SharedPlan />
-            </View>
-          )}
+          <View className="hidden lg:flex flex-1">
+            <SharedPlan size="desktop" />
+          </View>
         </View>
         <View className="flex-row flex-wrap justify-between gap-5 border-t border-border pt-6">
           {(

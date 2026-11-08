@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, AppState, Platform } from 'react-native';
 import { Text, View, useQuiltTheme } from '@quilt/ui';
 import { AppearanceProvider } from '../state/appearance';
+import { useReducedMotion } from '../lib/navigation/motion';
 import {
   appStore,
   subscribeToSessionChanges,
@@ -13,6 +14,7 @@ import {
 
 function RootNavigator() {
   const { colors, mode } = useQuiltTheme();
+  const reducedMotion = useReducedMotion();
   const session = useAppStore((state) => state.session);
   const status = useAppStore((state) => state.sessionStatus);
   useEffect(() => {
@@ -47,6 +49,8 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
+          animation: reducedMotion ? 'none' : 'fade',
+          animationDuration: 180,
           contentStyle: { backgroundColor: colors.background },
         }}
       >
@@ -56,6 +60,7 @@ function RootNavigator() {
         <Stack.Protected guard={authenticated}>
           <Stack.Screen name="home" />
           <Stack.Screen name="workspace" />
+          <Stack.Screen name="households" />
         </Stack.Protected>
         <Stack.Screen name="verify-email" />
       </Stack>

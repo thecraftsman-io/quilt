@@ -6,6 +6,11 @@ describe('validateEnv mail configuration', () => {
     const base = {
       DATABASE_URL: 'postgresql://localhost/quilt',
       BETTER_AUTH_SECRET: 'test-secret-at-least-32-characters-long',
+      BETTER_AUTH_URL: 'http://localhost:3000',
+      APP_URL: 'http://localhost:8081',
+      CORS_ORIGINS: 'http://localhost:8081',
+      SMTP_HOST: 'localhost',
+      MAIL_FROM: 'hello@quilt.local',
     };
     const local = validateEnv({
       ...base,
@@ -18,12 +23,13 @@ describe('validateEnv mail configuration', () => {
     expect(() => validateEnv({ ...base, SMTP_USER: 'user' })).toThrow(
       /SMTP_PASSWORD/,
     );
-    expect(() => validateEnv({ ...base, NODE_ENV: 'production' })).toThrow(
-      /SMTP_HOST/,
-    );
+    expect(() =>
+      validateEnv({ ...base, NODE_ENV: 'production', SMTP_HOST: undefined }),
+    ).toThrow(/SMTP_HOST/);
     const prod = validateEnv({
       ...base,
       NODE_ENV: 'production',
+      BETTER_AUTH_URL: 'https://api.example.com',
       APP_URL: 'https://app.example.com',
       SMTP_HOST: 'smtp.example.com',
       MAIL_FROM: 'hello@example.com',

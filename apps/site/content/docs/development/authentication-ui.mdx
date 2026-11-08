@@ -5,8 +5,14 @@ description: Welcome, live email authentication, the centralized client, and the
 
 Quilt starts at `/` with a short presentation of shared spending, budgets, and
 savings goals. `/sign-up` creates an account, `/verify-email` confirms its address, and
-`/sign-in` opens a verified account through Better Auth. `/home` is protected and shows real households or a
-household-creation form. The former sample finance screens, floating demo
+`/sign-in` opens a verified account through Better Auth. `/home` is protected and opens the active household directly. If the account has
+no households, the server creates **My household** with the user as owner before
+opening its overview. Existing households are reused; the active household in the
+current session is preferred, with the oldest accessible household as fallback.
+`/households`, available from **More → Households** and settings, contains household
+switching and optional create/join forms. It is not the post-login landing screen.
+Default setup is serialized per user in a database transaction so simultaneous
+launches cannot create duplicate defaults. The former sample finance screens, floating demo
 navigation, gallery route, and expense preview have been removed.
 
 ## State and client boundaries
@@ -35,7 +41,7 @@ for the app session and defaults to the device theme.
 
 Configure the NestJS API using `apps/api/.env.example`, including the database,
 Redis, a generated `BETTER_AUTH_SECRET`, and exact `CORS_ORIGINS`. Both
-`http://localhost:8081` and `http://localhost:8082` are included in the development
+`http://localhost:8081` and `http://localhost:8081` are included in the development
 default. Better Auth trusts those same configured origins and `quilt://`.
 
 ```sh

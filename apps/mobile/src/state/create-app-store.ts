@@ -11,6 +11,8 @@ export interface AppState {
   sessionError: string | null;
   authPending: boolean;
   households: Household[];
+  activeHouseholdId: string | null;
+  selectHousehold: (id: string) => Promise<void>;
   householdsStatus: Status;
   householdsError: string | null;
   householdPending: boolean;
@@ -27,7 +29,7 @@ export interface AppState {
   register: QuiltClient['auth']['register'];
   signOut: () => Promise<void>;
   loadHouseholds: () => Promise<void>;
-  createHousehold: (name: string) => Promise<void>;
+  createHousehold: (name: string) => Promise<Household | null>;
 }
 
 export function createAppStore(client: QuiltClient) {
@@ -37,6 +39,7 @@ export function createAppStore(client: QuiltClient) {
   return createStore<AppState>()((set, get) => {
     const emptyHouseholds = {
       households: [],
+      activeHouseholdId: null,
       householdsStatus: 'idle' as const,
       householdsError: null,
       householdPending: false,
@@ -209,13 +212,31 @@ export function createAppStore(client: QuiltClient) {
         const revision = ++householdRevision;
         set({ householdsStatus: 'loading', householdsError: null });
         try {
-          const households = await client.households.list();
+          let households = await client.households.list();
+          if (started !== epoch || revision !== householdRevision) return;
+          if (!households.length) {
+            households = [await client.households.ensureDefault()];
+          }
+          households.sort(
+            (a, b) =>
+              a.createdAt.getTime() - b.createdAt.getTime() ||
+              a.id.localeCompare(b.id),
+          );
           if (
             started === epoch &&
             revision === householdRevision &&
             userId === get().session?.user.id
           )
-            set({ households, householdsStatus: 'ready' });
+            set({
+              households,
+              householdsStatus: 'ready',
+              activeHouseholdId:
+                households.find((h) => h.id === get().activeHouseholdId)?.id ??
+                households.find(
+                  (h) => h.id === get().session?.session.activeOrganizationId,
+                )?.id ??
+                households[0]!.id,
+            });
         } catch {
           if (started === epoch && revision === householdRevision)
             set({
@@ -225,8 +246,27 @@ export function createAppStore(client: QuiltClient) {
             });
         }
       },
+      selectHousehold: async (id) => {
+        if (!get().session || !get().households.some((h) => h.id === id))
+          throw new Error(
+            'This household is no longer available. Refresh and try again.',
+          );
+        const started = epoch;
+        await client.households.setActive(id);
+        if (started === epoch) {
+          const session = get().session;
+          if (session)
+            set({
+              activeHouseholdId: id,
+              session: {
+                ...session,
+                session: { ...session.session, activeOrganizationId: id },
+              },
+            });
+        }
+      },
       createHousehold: async (name) => {
-        if (!get().session || get().householdPending) return;
+        if (!get().session || get().householdPending) return null;
         const started = epoch;
         set({ householdPending: true });
         try {
@@ -241,7 +281,9 @@ export function createAppStore(client: QuiltClient) {
               householdsStatus: 'ready',
               householdsError: null,
             });
+            return household;
           }
+          return null;
         } finally {
           if (started === epoch) set({ householdPending: false });
         }

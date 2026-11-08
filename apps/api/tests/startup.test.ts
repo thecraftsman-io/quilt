@@ -28,6 +28,8 @@ describe('API Startup', () => {
             DATABASE_URL: 'postgresql://unused:unused@127.0.0.1:1/unused',
             BETTER_AUTH_SECRET:
               'test-only-startup-secret-at-least-32-characters',
+            BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
+            APP_URL: 'http://localhost:8081',
             NODE_ENV: 'test',
             CORS_ORIGINS: 'http://localhost:8081',
           },

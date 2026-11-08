@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
-import { Menu } from 'tamagui';
+import { Platform } from 'react-native';
+import { Menu, useMedia } from 'tamagui';
 import { Drawer } from './drawer';
 import { Button } from './button';
 
@@ -24,8 +24,8 @@ export function ActionMenu({
   bottomInset,
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
-  const { width } = useWindowDimensions();
-  if (Platform.OS !== 'web' || width < 768) {
+  const media = useMedia();
+  if (Platform.OS !== 'web' || !media.md) {
     return (
       <>
         {trigger(() => setOpen(true))}

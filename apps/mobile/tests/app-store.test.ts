@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { createAppStore } from '../src/state/create-app-store';
 import type { Household, Session } from '../src/lib/client';
+import { createAuthApi } from '../src/lib/client/auth';
+import type { RawAuthClient } from '../src/lib/client/auth-client';
+import { ClientError } from '../src/lib/client/errors';
 
 describe('AppStore', () => {
   const session: Session = {
@@ -50,6 +53,8 @@ describe('AppStore', () => {
         ...authOverrides,
       },
       households: {
+        ensureDefault: () => Promise.resolve(household),
+        setActive: () => Promise.resolve(),
         list: () => Promise.resolve([household]),
         create: (name: string) => Promise.resolve({ ...household, name }),
         ...householdOverrides,
@@ -68,6 +73,123 @@ describe('AppStore', () => {
     expect(store.getState().session).toBeNull();
     expect(store.getState().households).toEqual([]);
     expect(store.getState().appearance).toBe('dark');
+  });
+
+  it('opens a default household automatically for a user with none', async () => {
+    let setups = 0;
+    const store = createAppStore(
+      fakeClient({
+        households: {
+          list: () => Promise.resolve([]),
+          ensureDefault: () => {
+            setups++;
+            return Promise.resolve(household);
+          },
+        },
+      }),
+    );
+    await store
+      .getState()
+      .signIn({ email: 'alex@example.com', password: 'password' });
+    await store.getState().loadHouseholds();
+    expect(setups).toBeGreaterThan(0);
+    expect(store.getState().activeHouseholdId).toBe(household.id);
+    expect(store.getState().householdsStatus).toBe('ready');
+  });
+
+  it('reuses existing households and restores the active household from the session', async () => {
+    const other = { ...household, id: 'other', name: 'Other' };
+    let setups = 0;
+    const store = createAppStore(
+      fakeClient({
+        auth: {
+          getSession: () =>
+            Promise.resolve({
+              ...session,
+              session: { ...session.session, activeOrganizationId: other.id },
+            }),
+        },
+        households: {
+          list: () => Promise.resolve([household, other]),
+          ensureDefault: () => {
+            setups++;
+            return Promise.resolve(household);
+          },
+        },
+      }),
+    );
+    await store.getState().refreshSession();
+    await store.getState().loadHouseholds();
+    expect(store.getState().activeHouseholdId).toBe(other.id);
+    expect(setups).toBe(0);
+    await store.getState().selectHousehold(household.id);
+    expect(store.getState().session?.session.activeOrganizationId).toBe(
+      household.id,
+    );
+    await store.getState().loadHouseholds();
+    expect(store.getState().activeHouseholdId).toBe(household.id);
+    await store.getState().signOut();
+    expect(store.getState().activeHouseholdId).toBeNull();
+  });
+
+  it('falls back when the remembered household is no longer accessible', async () => {
+    const store = createAppStore(
+      fakeClient({
+        auth: {
+          getSession: () =>
+            Promise.resolve({
+              ...session,
+              session: { ...session.session, activeOrganizationId: 'removed' },
+            }),
+        },
+      }),
+    );
+    await store.getState().refreshSession();
+    await store.getState().loadHouseholds();
+    expect(store.getState().activeHouseholdId).toBe(household.id);
+    await expect(store.getState().selectHousehold('removed')).rejects.toThrow();
+  });
+
+  it('a default setup failure stays recoverable instead of opening an empty household', async () => {
+    const store = createAppStore(
+      fakeClient({
+        households: {
+          list: () => Promise.resolve([]),
+          ensureDefault: () => Promise.reject(new Error('Unavailable')),
+        },
+      }),
+    );
+    await store
+      .getState()
+      .signIn({ email: 'alex@example.com', password: 'password' });
+    await store.getState().loadHouseholds();
+    expect(store.getState().householdsStatus).toBe('error');
+    expect(store.getState().activeHouseholdId).toBeNull();
+  });
+
+  it('a setup response cannot restore a household after sign-out', async () => {
+    let finish!: (value: Household) => void;
+    const setup = new Promise<Household>((resolve) => {
+      finish = resolve;
+    });
+    const store = createAppStore(
+      fakeClient({
+        households: {
+          list: () => Promise.resolve([]),
+          ensureDefault: () => setup,
+        },
+      }),
+    );
+    await store
+      .getState()
+      .signIn({ email: 'alex@example.com', password: 'password' });
+    const loading = store.getState().loadHouseholds();
+    await Promise.resolve();
+    await store.getState().signOut();
+    finish(household);
+    await loading;
+    expect(store.getState().activeHouseholdId).toBeNull();
+    expect(store.getState().households).toEqual([]);
   });
 
   it('a stale session response cannot sign someone back in after sign-out', async () => {
@@ -165,6 +287,45 @@ describe('AppStore', () => {
     expect(store.getState().session).toBeNull();
     expect(store.getState().verificationEmail).toBe('alex@example.com');
     expect(lists).toBe(0);
+  });
+
+  it('duplicate signup fails without entering the check-inbox flow', async () => {
+    const auth = createAuthApi({
+      signUp: {
+        email: () =>
+          Promise.resolve({
+            data: null,
+            error: {
+              status: 422,
+              code: 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL',
+              message:
+                'An account with this email already exists. Sign in instead.',
+            },
+          }),
+      },
+    } as unknown as RawAuthClient);
+    const store = createAppStore(
+      fakeClient({
+        auth: {
+          register: (input: Parameters<typeof auth.register>[0]) =>
+            auth.register(input),
+        },
+      }),
+    );
+
+    await expect(
+      store.getState().register({
+        name: 'Alex',
+        email: 'alex@example.com',
+        password: 'Test-password-123!',
+      }),
+    ).rejects.toMatchObject({
+      name: ClientError.name,
+      code: 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL',
+    });
+    expect(store.getState().verificationEmail).toBeNull();
+    expect(store.getState().verificationStatus).toBe('idle');
+    expect(store.getState().authPending).toBe(false);
   });
 
   it('restored unverified sessions cannot expose household data', async () => {

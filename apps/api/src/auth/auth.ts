@@ -105,7 +105,7 @@ export function createAuth(db: Database, options: AuthConfigOptions) {
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         if (ctx.path === '/sign-up/email') {
-          const body = ctx.body as { password?: unknown };
+          const body = ctx.body as { email?: unknown; password?: unknown };
           if (typeof body?.password === 'string') {
             const result = PasswordSchema.safeParse(body.password);
             if (!result.success) {
@@ -114,6 +114,21 @@ export function createAuth(db: Database, options: AuthConfigOptions) {
                 message:
                   result.error.issues[0]?.message ??
                   'Password does not meet complexity requirements.',
+              });
+            }
+          }
+          // Better Auth masks duplicate signups as success when verification is
+          // required. Reject them explicitly so the app never promises an email
+          // that was not sent, including for existing unverified accounts.
+          if (typeof body?.email === 'string') {
+            const existing = await ctx.context.internalAdapter.findUserByEmail(
+              body.email.toLowerCase(),
+            );
+            if (existing) {
+              throw new APIError('UNPROCESSABLE_ENTITY', {
+                code: 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL',
+                message:
+                  'An account with this email already exists. Sign in instead.',
               });
             }
           }

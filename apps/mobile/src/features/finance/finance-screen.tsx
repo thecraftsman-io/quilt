@@ -1,9 +1,9 @@
-import { Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 import { addMoney, money } from '@quilt/domain';
-import { Button, Card, Text, View, useQuiltTheme } from '@quilt/ui';
+import { Button, Card, Pressable, Text, View, useQuiltTheme } from '@quilt/ui';
 import { useFinance } from './finance-context';
 import { Empty, EntryRow, Page, RemoteState, useNavigate } from './components';
 import { display } from './model';
@@ -34,6 +34,7 @@ import {
   SettingsScreen,
 } from './settings-screens';
 import { CashFlowChart } from './cash-flow-chart';
+import { ScreenTransition } from '../../lib/navigation/motion';
 
 const navigation = [
   { screen: 'overview', label: 'Home', icon: 'home' },
@@ -71,7 +72,7 @@ function OverviewScreen() {
       ) : (
         <View className="flex-row flex-wrap gap-4">
           {currencies.map((currency) => (
-            <Card key={currency} style={{ flexGrow: 1, flexBasis: 220 }}>
+            <Card key={currency} className="grow basis-[220px]">
               <Text tone="textMuted">Account balances · {currency}</Text>
               <Text variant="heading">
                 {display(
@@ -172,43 +173,25 @@ export function FinanceScreen() {
   const screen = params.screen ?? 'overview';
   const { data, workspaceId, refresh } = useFinance();
   const { colors } = useQuiltTheme();
-  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const go = useNavigate();
-  const wide = width >= 900;
   const section = activeSection(screen);
   const nav = (
-    <View
-      style={{
-        flexDirection: wide ? 'column' : 'row',
-        justifyContent: 'space-around',
-        gap: wide ? 8 : 0,
-      }}
-    >
+    <View className="justify-around flex-row gap-0 lg:flex-col lg:gap-2">
       {navigation.map((item) => (
         <Pressable
           key={item.screen}
-          accessibilityRole="button"
-          accessibilityLabel={item.label}
-          accessibilityState={{ selected: section === item.screen }}
-          onPress={() =>
+          aria-label={item.label}
+          aria-current={section === item.screen ? 'page' : undefined}
+          onPress={() => {
+            if (screen === item.screen) return;
             router.navigate({
               pathname: '/workspace/[workspaceId]/[screen]',
               params: { workspaceId, screen: item.screen },
-            })
-          }
-          style={{
-            minHeight: 56,
-            flex: wide ? undefined : 1,
-            padding: 10,
-            borderRadius: 8,
-            flexDirection: wide ? 'row' : 'column',
-            alignItems: 'center',
-            gap: wide ? 12 : 4,
-            backgroundColor:
-              section === item.screen ? colors.surfaceMuted : undefined,
+            });
           }}
+          className={`min-h-[56px] p-[10px] rounded-[8px] items-center press:opacity-70 flex-1 flex-col gap-1 lg:flex-none lg:flex-row lg:gap-3 ${section === item.screen ? 'bg-surfaceMuted' : ''}`}
         >
           <Feather
             name={item.icon}
@@ -216,7 +199,8 @@ export function FinanceScreen() {
             color={section === item.screen ? colors.primary : colors.textMuted}
           />
           <Text
-            variant={wide ? 'label' : 'caption'}
+            variant="caption"
+            className="lg:text-sm lg:font-semibold"
             tone={section === item.screen ? 'text' : 'textMuted'}
           >
             {item.label}
@@ -226,106 +210,54 @@ export function FinanceScreen() {
     </View>
   );
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingTop: insets.top,
-      }}
-    >
-      <View
-        style={{
-          minHeight: 72,
-          paddingHorizontal: wide ? 32 : 20,
-          borderBottomWidth: 1,
-          borderColor: colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Quilt home"
-          onPress={() => go('overview')}
-        >
-          <Text variant="heading">quilt.</Text>
-        </Pressable>
-        <Text variant="caption" tone="textMuted">
-          {data.workspace.role === 'viewer' ? 'View only' : 'Shared household'}
-        </Text>
-        <Button
-          variant="secondary"
-          label="Households"
-          onPress={() => router.replace('/home')}
-        />
-      </View>
-      <View style={{ flex: 1, flexDirection: 'row' }}>
-        {wide && (
-          <View
-            style={{
-              width: 216,
-              padding: 20,
-              borderRightWidth: 1,
-              borderColor: colors.border,
-              gap: 24,
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 flex-row">
+        <View className="hidden lg:flex w-[216px] p-5 border-r border-border gap-6">
+          <Text variant="label">{data.workspace.name}</Text>
+          {nav}
+          <Button
+            label="Households"
+            variant="secondary"
+            onPress={() => router.push('/households')}
+          />
+          <Button
+            label="Refresh"
+            variant="secondary"
+            onPress={() => {
+              void refresh();
             }}
-          >
-            <Text variant="label">{data.workspace.name}</Text>
-            {nav}
-            <Button
-              label="Refresh"
-              variant="secondary"
-              onPress={() => {
-                void refresh();
-              }}
-            />
-          </View>
-        )}
-        <ScrollView
-          key={`${screen}-${params.id ?? ''}`}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
-            padding: wide ? 40 : 20,
-            paddingBottom: 40,
-            width: '100%',
-            maxWidth: 1040,
-            alignSelf: 'center',
-            gap: 24,
-          }}
-          style={{ flex: 1 }}
+          />
+        </View>
+        <ScreenTransition
+          key={`${screen}-${params.id ?? ''}-${params.refundOf ?? ''}-${params.accountId ?? ''}`}
         >
-          {!navigation.some((n) => n.screen === screen) && (
-            <View className="self-start">
-              <Button
-                variant="secondary"
-                label="← Back"
-                onPress={() =>
-                  router.canGoBack() ? router.back() : go(section)
-                }
+          <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
+            <View className="w-full max-w-[1040px] self-center gap-6 px-5 pt-5 pb-10 lg:p-10">
+              {!navigation.some((n) => n.screen === screen) && (
+                <View className="self-start">
+                  <Button
+                    variant="secondary"
+                    label="← Back"
+                    onPress={() =>
+                      router.canGoBack() ? router.back() : go(section)
+                    }
+                  />
+                </View>
+              )}
+              <ScreenContent
+                key={`${screen}-${params.id ?? ''}-${params.refundOf ?? ''}-${params.accountId ?? ''}`}
+                screen={screen}
               />
             </View>
-          )}
-          <ScreenContent
-            key={`${screen}-${params.id ?? ''}-${params.refundOf ?? ''}-${params.accountId ?? ''}`}
-            screen={screen}
-          />
-        </ScrollView>
+          </ScrollView>
+        </ScreenTransition>
       </View>
-      {!wide && (
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.surface,
-            paddingBottom: Math.max(insets.bottom, 8),
-            paddingTop: 6,
-          }}
-        >
-          {nav}
-        </View>
-      )}
+      <View
+        className="border-t border-border bg-surface pt-[6px] lg:hidden"
+        style={{ paddingBottom: Math.max(insets.bottom, 8) }}
+      >
+        {nav}
+      </View>
     </View>
   );
 }

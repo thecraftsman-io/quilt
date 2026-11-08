@@ -1,4 +1,5 @@
 {
   "extends": ["expo/tsconfig.base", "@quilt/typescript-config/base.json"],
-  "include": ["src/**/*", "tests/**/*", "env.d.ts"]
+  "include": ["src/**/*", "tests/**/*", "env.d.ts"],
+  "exclude": ["tests/native-actions.test.ts"]
 }

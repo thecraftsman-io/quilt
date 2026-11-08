@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
-import { Pressable } from 'react-native';
 import Svg, { Path, Rect, Text as SvgText } from 'react-native-svg';
 import Feather from '@expo/vector-icons/Feather';
-import { Card, Text, View, useQuiltTheme } from '@quilt/ui';
+import { Card, Pressable, Text, View, useQuiltTheme } from '@quilt/ui';
 import { useFinance } from './finance-context';
 import { financeApi } from '../../lib/client/finance';
 import { useRemote, workspaceToday } from './hooks';
@@ -118,7 +117,7 @@ function FlowDiagram({ flow }: { flow: ReturnType<typeof cashFlow> }) {
         width="100%"
         height={height}
         viewBox={`0 0 ${chartWidth} ${height}`}
-        accessibilityLabel="Cash flow diagram. Income and refunds flow into spending categories and money left over."
+        aria-label="Cash flow diagram. Income and refunds flow into spending categories and money left over."
       >
         {column(flow.sources, 'source')}
         {column(flow.destinations, 'destination')}
@@ -230,21 +229,18 @@ export function CashFlowChart() {
         <Text variant="title">Cash flow</Text>
         <View className="flex-row items-center gap-2">
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Previous cash flow month"
+            aria-label="Previous cash flow month"
             onPress={() => setMonth(shiftMonth(month, -1))}
-            style={{ padding: 12 }}
+            className="p-3"
           >
             <Feather name="chevron-left" size={18} color={colors.textMuted} />
           </Pressable>
           <Text variant="label">{label}</Text>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Next cash flow month"
-            accessibilityState={{ disabled: month >= currentMonth }}
+            aria-label="Next cash flow month"
             disabled={month >= currentMonth}
             onPress={() => setMonth(shiftMonth(month, 1))}
-            style={{ padding: 12, opacity: month >= currentMonth ? 0.3 : 1 }}
+            className={`p-3 ${month >= currentMonth ? 'opacity-30' : ''}`}
           >
             <Feather name="chevron-right" size={18} color={colors.textMuted} />
           </Pressable>
@@ -252,10 +248,9 @@ export function CashFlowChart() {
       </View>
       {month !== currentMonth && (
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Show this month’s cash flow"
+          aria-label="Show this month’s cash flow"
           onPress={() => setMonth(currentMonth)}
-          style={{ minHeight: 44, justifyContent: 'center' }}
+          className="min-h-[44px] justify-center"
         >
           <Text variant="label">This month</Text>
         </Pressable>
@@ -277,10 +272,7 @@ export function CashFlowChart() {
                 { label: 'Money out', amount: flow.expenses },
                 { label: 'Net cash flow', amount: flow.net },
               ].map((item) => (
-                <View
-                  key={item.label}
-                  style={{ flexGrow: 1, minWidth: 110, gap: 4 }}
-                >
+                <View key={item.label} className="grow min-w-[110px] gap-1">
                   <Text variant="caption" tone="textMuted">
                     {item.label}
                   </Text>
@@ -306,10 +298,9 @@ export function CashFlowChart() {
             {flow.total.amount !== '0' && (
               <>
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: showDetails }}
+                  aria-expanded={showDetails}
                   onPress={() => setShowDetails(!showDetails)}
-                  style={{ minHeight: 44, justifyContent: 'center' }}
+                  className="min-h-[44px] justify-center"
                 >
                   <Text variant="label">
                     {showDetails ? 'Hide breakdown −' : 'View breakdown +'}
@@ -328,7 +319,7 @@ export function CashFlowChart() {
                             key={group.key}
                             className="flex-row justify-between gap-4"
                           >
-                            <Text tone="textMuted" style={{ flex: 1 }}>
+                            <Text tone="textMuted" className="flex-1">
                               {group.label}
                             </Text>
                             <Text>{display(group.amount)}</Text>

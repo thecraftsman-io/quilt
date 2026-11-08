@@ -11,10 +11,19 @@ import { AuthService } from '../auth/auth.service';
 import { CurrentSession } from '../auth/decorators/current-session.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { DefaultHouseholdService } from './default-household.service';
 
 @Controller('organizations')
 export class OrganizationsController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly defaults: DefaultHouseholdService,
+  ) {}
+
+  @Post('default')
+  ensureDefault(@CurrentUser() user: { id: string }) {
+    return this.defaults.ensure(user.id);
+  }
 
   @Get('me')
   getProfile(

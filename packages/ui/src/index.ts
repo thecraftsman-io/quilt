@@ -19,6 +19,7 @@ export {
 export { View, styled } from '@tamagui/tailwind';
 export { tamaguiConfig } from './tamagui.config';
 export { IconButton } from './icon-button';
+export { Pressable } from './pressable';
 export { Drawer, type DrawerProps } from './drawer';
 export {
   ActionMenu,

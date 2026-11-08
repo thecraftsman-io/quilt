@@ -25,7 +25,7 @@ export function PasswordField(
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
           onPress={() => setVisible(!visible)}
-          style={{ backgroundColor: 'transparent' }}
+          className="bg-transparent"
         >
           <Feather
             name={visible ? 'eye-off' : 'eye'}

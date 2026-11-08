@@ -76,6 +76,8 @@ export const tamaguiConfig = createTamagui({
   fonts: { ...defaultConfig.fonts, body: systemFont, heading: systemFont },
   media: {
     ...defaultConfig.media,
+    phone: { minWidth: 375 },
+    short: { maxHeight: 739 },
     sm: { minWidth: 640 },
     md: { minWidth: layout.wideBreakpoint },
     lg: { minWidth: 1024 },

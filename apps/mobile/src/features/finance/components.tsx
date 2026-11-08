@@ -1,8 +1,8 @@
 import type { PropsWithChildren } from 'react';
-import { ActivityIndicator, Pressable } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
-import { Button, Card, Text, View, useQuiltTheme } from '@quilt/ui';
+import { Button, Card, Pressable, Text, View, useQuiltTheme } from '@quilt/ui';
 import { display } from './model';
 import type { FinanceRecordMap } from '@quilt/contracts';
 import { useFinance } from './finance-context';
@@ -19,7 +19,6 @@ export function AccountChoice({
   exclude?: string;
 }) {
   const { data } = useFinance();
-  const { colors } = useQuiltTheme();
   return (
     <View className="gap-2">
       <Text variant="label">{label}</Text>
@@ -29,18 +28,9 @@ export function AccountChoice({
           .map((a) => (
             <Pressable
               key={a.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: value === a.id }}
+              aria-pressed={value === a.id}
               onPress={() => onChange(a.id)}
-              style={{
-                minHeight: 44,
-                padding: 12,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: value === a.id ? colors.primary : colors.border,
-                backgroundColor:
-                  value === a.id ? colors.surfaceMuted : colors.surface,
-              }}
+              className={`min-h-[44px] p-3 rounded-[8px] border ${value === a.id ? 'border-primary bg-surfaceMuted' : 'border-border bg-surface'}`}
             >
               <Text variant="label">
                 {a.name} · {a.currency}
@@ -79,7 +69,6 @@ export function Choices({
   values: readonly string[];
   onChange: (value: string) => void;
 }) {
-  const { colors } = useQuiltTheme();
   return (
     <View className="gap-2">
       <Text variant="label">{label}</Text>
@@ -87,19 +76,9 @@ export function Choices({
         {values.map((item) => (
           <Pressable
             key={item}
-            accessibilityRole="button"
-            accessibilityState={{ selected: item === value }}
+            aria-pressed={item === value}
             onPress={() => onChange(item)}
-            style={{
-              minHeight: 44,
-              paddingHorizontal: 14,
-              paddingVertical: 11,
-              borderWidth: 1,
-              borderRadius: 8,
-              borderColor: item === value ? colors.primary : colors.border,
-              backgroundColor:
-                item === value ? colors.surfaceMuted : colors.surface,
-            }}
+            className={`min-h-[44px] px-[14px] py-[11px] border rounded-[8px] ${item === value ? 'border-primary bg-surfaceMuted' : 'border-border bg-surface'}`}
           >
             <Text variant="label">{item}</Text>
           </Pressable>
@@ -120,13 +99,18 @@ export function Page({
   action?: () => void;
   actionLabel?: string;
 }>) {
-  const { canEdit } = useFinance();
+  const { canEdit, data } = useFinance();
   return (
     <View className="gap-6">
       <View className="gap-4">
         <View className="gap-2">
           <Text variant="heading">{title}</Text>
           {Boolean(subtitle) && <Text tone="textMuted">{subtitle}</Text>}
+          {data.workspace.role === 'viewer' && (
+            <Text variant="caption" tone="textMuted">
+              View only
+            </Text>
+          )}
         </View>
         {action && canEdit && (
           <View className="self-start">
@@ -153,15 +137,11 @@ export function Row({
   const content = (
     <View className="flex-row items-center gap-3 py-4 border-b border-border">
       <View className="flex-1 gap-1">
-        <Text variant="label" style={{ textAlign: 'left' }}>
+        <Text variant="label" className="text-left">
           {title}
         </Text>
         {Boolean(subtitle) && (
-          <Text
-            variant="caption"
-            tone="textMuted"
-            style={{ textAlign: 'left' }}
-          >
+          <Text variant="caption" tone="textMuted" className="text-left">
             {subtitle}
           </Text>
         )}
@@ -173,11 +153,7 @@ export function Row({
     </View>
   );
   return onPress ? (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-    >
+    <Pressable aria-label={title} onPress={onPress}>
       {content}
     </Pressable>
   ) : (
@@ -261,7 +237,6 @@ export function Picker({
   options: { id: string; name: string }[];
   onChange: (id: string) => void;
 }) {
-  const { colors } = useQuiltTheme();
   return (
     <View className="gap-2">
       <Text variant="label">{label}</Text>
@@ -269,18 +244,9 @@ export function Picker({
         {options.map((option) => (
           <Pressable
             key={option.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: option.id === value }}
+            aria-pressed={option.id === value}
             onPress={() => onChange(option.id)}
-            style={{
-              minHeight: 44,
-              padding: 12,
-              borderWidth: 1,
-              borderRadius: 8,
-              borderColor: option.id === value ? colors.primary : colors.border,
-              backgroundColor:
-                option.id === value ? colors.surfaceMuted : colors.surface,
-            }}
+            className={`min-h-[44px] p-3 border rounded-[8px] ${option.id === value ? 'border-primary bg-surfaceMuted' : 'border-border bg-surface'}`}
           >
             <Text variant="label">{option.name}</Text>
           </Pressable>
@@ -301,10 +267,7 @@ export function RemoteState({
   return (
     <Card>
       {loading ? (
-        <ActivityIndicator
-          accessibilityLabel="Loading"
-          color={colors.primary}
-        />
+        <ActivityIndicator aria-label="Loading" color={colors.primary} />
       ) : (
         <>
           <ErrorMessage message={error || 'This record could not be loaded.'} />
@@ -326,7 +289,6 @@ export function ReadOnly() {
   );
 }
 export function Progress({ value, total }: { value: number; total: number }) {
-  const { colors } = useQuiltTheme();
   const percent = Math.max(0, Math.min(100, total ? (value / total) * 100 : 0));
   return (
     <View
@@ -335,19 +297,11 @@ export function Progress({ value, total }: { value: number; total: number }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(percent)}
-      style={{
-        height: 5,
-        borderRadius: 3,
-        backgroundColor: colors.surfaceMuted,
-      }}
+      className="h-[5px] rounded-[3px] bg-surfaceMuted"
     >
       <View
-        style={{
-          height: 5,
-          borderRadius: 3,
-          width: `${percent}%`,
-          backgroundColor: colors.primary,
-        }}
+        className="h-[5px] rounded-[3px] bg-primary"
+        style={{ width: `${percent}%` }}
       />
     </View>
   );
