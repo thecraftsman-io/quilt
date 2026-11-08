@@ -1,6 +1,6 @@
 import { createContext, useContext, type PropsWithChildren } from 'react';
 import { useColorScheme } from 'react-native';
-import { TamaguiProvider } from 'tamagui';
+import { TamaguiProvider, Theme } from 'tamagui';
 import { tamaguiConfig } from './tamagui.config';
 import { themes, type ThemeMode, type ThemePreference } from './tokens';
 
@@ -14,8 +14,8 @@ export function QuiltProvider({
   const mode = theme === 'system' ? (systemTheme ?? 'light') : theme;
   return (
     <ThemeContext.Provider value={mode}>
-      <TamaguiProvider config={tamaguiConfig} defaultTheme={mode}>
-        {children}
+      <TamaguiProvider config={tamaguiConfig} defaultTheme={mode} key={mode}>
+        <Theme name={mode}>{children}</Theme>
       </TamaguiProvider>
     </ThemeContext.Provider>
   );

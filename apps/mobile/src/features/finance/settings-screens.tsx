@@ -485,11 +485,20 @@ export function SettingsScreen() {
           label="Appearance"
           value={preference}
           values={['system', 'light', 'dark']}
+          labels={{
+            system: 'System default',
+            light: 'Light',
+            dark: 'Dark',
+          }}
           onChange={(v) => {
             if (v === 'system' || v === 'light' || v === 'dark')
               setPreference(v);
           }}
         />
+        <Text variant="caption" tone="textMuted">
+          When set to system default, Quilt automatically matches your device’s
+          appearance.
+        </Text>
       </Card>
       <ErrorMessage message={action.error} />
       <Button

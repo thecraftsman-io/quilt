@@ -62,11 +62,13 @@ export function Choices({
   label,
   value,
   values,
+  labels,
   onChange,
 }: {
   label: string;
   value: string;
   values: readonly string[];
+  labels?: Record<string, string>;
   onChange: (value: string) => void;
 }) {
   return (
@@ -80,7 +82,7 @@ export function Choices({
             onPress={() => onChange(item)}
             className={`min-h-[44px] px-[14px] py-[11px] border rounded-[8px] ${item === value ? 'border-primary bg-surfaceMuted' : 'border-border bg-surface'}`}
           >
-            <Text variant="label">{item}</Text>
+            <Text variant="label">{labels?.[item] ?? item}</Text>
           </Pressable>
         ))}
       </View>

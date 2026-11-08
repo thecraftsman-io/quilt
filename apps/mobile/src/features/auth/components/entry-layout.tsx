@@ -6,15 +6,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { Link } from 'expo-router';
-import Feather from '@expo/vector-icons/Feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconButton, Text, View, useQuiltTheme } from '@quilt/ui';
-import { useAppearance } from '../../../state/appearance';
+import { Text, View, useQuiltTheme } from '@quilt/ui';
 import appIcon from '../../../../assets/favicon.png';
 
 export function EntryLayout({ children }: PropsWithChildren) {
-  const { colors, mode } = useQuiltTheme();
-  const { setPreference } = useAppearance();
+  const { colors } = useQuiltTheme();
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView
@@ -32,7 +29,7 @@ export function EntryLayout({ children }: PropsWithChildren) {
           paddingBottom: insets.bottom,
         }}
       >
-        <View className="flex-row items-center justify-between px-6 md:px-10 py-4">
+        <View className="flex-row items-center px-6 md:px-10 py-4">
           <Link href="/" aria-label="Quilt home">
             <View className="flex-row items-center gap-2">
               <Image
@@ -46,18 +43,6 @@ export function EntryLayout({ children }: PropsWithChildren) {
               </Text>
             </View>
           </Link>
-          <IconButton
-            aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} theme`}
-            onPress={() => setPreference(mode === 'light' ? 'dark' : 'light')}
-            className="bg-transparent"
-          >
-            <Feather
-              name={mode === 'light' ? 'moon' : 'sun'}
-              size={18}
-              color={colors.textMuted}
-              accessible={false}
-            />
-          </IconButton>
         </View>
         {children}
       </ScrollView>
